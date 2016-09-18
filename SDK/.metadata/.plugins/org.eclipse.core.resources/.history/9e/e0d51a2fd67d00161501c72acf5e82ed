@@ -41,18 +41,14 @@ void main_myProgram( void )
 	initLogList(&appLogList);
 	initLogList(&schedulerLogList);
 
-	//createSyntheticTasks();
+	createSyntheticTasks();
 
-//	xTaskCreate( prvExperimentControlTask,	/* The function that implements the task. */
-//					"ExpCtrl", 		/* The text name assigned to the task - for debug only as it is not used by the kernel. */
-//					EXP_TASK_STACK_SIZE,/* The size of the stack to allocate to the task. */
-//					NULL, 				/* The parameter passed to the task - not used in this case. */
-//					EXP_TASK_PRIORITY, 	/* The priority assigned to the task. */
-//					NULL );				/* The task handle is not required, so NULL is passed. */
-
-	#include "FlightControl/ahrs_task.h"
-	xTaskCreate(ahrs_task, (portCHAR *)"AHRS task",
-				4096, NULL, tskIDLE_PRIORITY + 3, NULL);
+	xTaskCreate( prvExperimentControlTask,	/* The function that implements the task. */
+					"ExpCtrl", 		/* The text name assigned to the task - for debug only as it is not used by the kernel. */
+					EXP_TASK_STACK_SIZE,/* The size of the stack to allocate to the task. */
+					NULL, 				/* The parameter passed to the task - not used in this case. */
+					EXP_TASK_PRIORITY, 	/* The priority assigned to the task. */
+					NULL );				/* The task handle is not required, so NULL is passed. */
 
 	/* Start the tasks and timer running. */
 	vTaskStartScheduler();

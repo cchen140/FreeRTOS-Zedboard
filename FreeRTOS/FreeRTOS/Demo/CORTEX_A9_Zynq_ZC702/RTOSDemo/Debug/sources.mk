@@ -21,6 +21,7 @@ src/MyProgram/v7_pmu \
 src/MyProgram/crypto_aes \
 src/MyProgram \
 src/MyProgram/LogUtility \
+src/MyProgram/FlightControl \
 src/FreeRTOS_Source \
 src/FreeRTOS_Source/portable/MemMang \
 src/FreeRTOS_Source/portable/GCC/ARM_CA9 \

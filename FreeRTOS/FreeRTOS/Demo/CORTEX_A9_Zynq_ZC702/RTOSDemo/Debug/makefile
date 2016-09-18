@@ -11,6 +11,7 @@ RM := rm -rf
 -include src/MyProgram/v7_pmu/subdir.mk
 -include src/MyProgram/crypto_aes/subdir.mk
 -include src/MyProgram/LogUtility/subdir.mk
+-include src/MyProgram/FlightControl/subdir.mk
 -include src/MyProgram/subdir.mk
 -include src/FreeRTOS_Source/portable/MemMang/subdir.mk
 -include src/FreeRTOS_Source/portable/GCC/ARM_CA9/subdir.mk
