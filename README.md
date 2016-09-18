@@ -1,1 +1,1 @@
-# FreeRTOSv9.0.0-Zedboard
+# FreeRTOS on Zedboard Base Project Repository
