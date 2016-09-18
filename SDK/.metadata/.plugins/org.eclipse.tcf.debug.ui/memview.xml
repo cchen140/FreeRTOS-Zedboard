@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<Memory>
+<Block Addr="122" Context="JTAG-jsn-Zed-210248586478-4ba00477-0.0" Size="-1"/>
+<Block Addr="0x11525c" Context="JTAG-jsn-Zed-210248586478-4ba00477-0.0" Size="-1"/>
+<Block Addr="0x117712" Context="JTAG-jsn-Zed-210248586478-4ba00477-0.0" Size="-1"/>
+<Block Addr="0x0010bf38" Context="JTAG-jsn-Zed-210248586478-4ba00477-0.0" Size="-1"/>
+<Block Addr="0x10be78" Context="JTAG-jsn-Zed-210248586478-4ba00477-0.0" Size="-1"/>
+<Block Addr="0x10be74" Context="JTAG-jsn-Zed-210248586478-4ba00477-0.0" Size="-1"/>
+<Block Addr="0x10647c" Context="JTAG-jsn-Zed-210248586478-4ba00477-0.0" Size="-1"/>
+<Block Addr="0x10be9c" Context="JTAG-jsn-Zed-210248586478-4ba00477-0.0" Size="-1"/>
+<Block Addr="0x10be9c" Context="JTAG-jsn-Zed-210248586478-4ba00477-0.0" Size="-1"/>
+<Block Addr="0x10bcb2" Context="JTAG-jsn-Zed-210248586478-4ba00477-0.0" Size="-1"/>
+<Block Addr="0x114074" Context="JTAG-jsn-DLC9LP-00001165dfb701-4ba00477-0.0" Size="-1"/>
+<Block Addr="x0f8f02104" Context="JTAG-jsn-DLC9LP-00001165dfb701-4ba00477-0.0" Size="-1"/>
+<Block Addr="0x22629c" Context="JTAG-jsn-DLC9LP-00001165dfb701-4ba00477-0.0" Size="4"/>
+<Block Addr="x0f8f02004" Context="JTAG-jsn-DLC9LP-00001165dfb701-4ba00477-0.0" Size="-1"/>
+<Block Addr="x000128220" Context="JTAG-jsn-DLC9LP-00001165dfb701-4ba00477-0.0" Size="-1"/>
+</Memory>

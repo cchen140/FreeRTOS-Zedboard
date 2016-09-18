@@ -1,0 +1,501 @@
+/*
+ * main_attack.c
+ *
+ *  Created on: Oct 29, 2014
+ *      Author: CY
+ */
+
+/* Kernel includes. */
+#include "FreeRTOS.h"
+#include "task.h"
+
+/* L2 event counter */
+#include "xl2cc_counter.h"
+
+/* Attack configuration */
+#include "AttackConfig.h"
+
+/* Attack function includes. */
+#include "CacheFunction.h"
+
+#define	GET_TIME32BIT *(volatile u32 *) (GLOBAL_TMR_BASEADDR + GTIMER_COUNTER_LOWER_OFFSET);
+
+
+#define	C_H_LINE	3.57
+#define	C_M_LINE	9.82
+
+/* The tasks running under FreeRTOS. */
+static void prvHackerTask( void *pvParameters );
+static void prvAppTask(void *pvParameters);
+
+u32 hackerArray[SIZE_OF_HACKER_ARRAY];	// Too big to fit the stack size limit of a FreeRTOS task.
+u32 u32AppArray[SIZE_OF_APP_ARRAY];	// Too big to fit the stack size limit of a FreeRTOS task.
+u32 u32EventCounter0, u32EventCounter1;
+void main_attack( void )
+{
+	u32 aux, actlr_info, sctlr_info, cache_id_reg;
+	u32 loop, temp;
+
+	/* Variable Declaration */
+	// None.
+
+    xil_printf("Program starts. \r\n");
+
+
+    // Disable caches before modifying configurations.
+    Xil_L1ICacheDisable();
+    Xil_L1DCacheDisable();
+    Xil_L2CacheDisable();
+
+    // Configure the Auxiliary Control Register for L2 cache
+    *(volatile u32 *)(0x0f8f02104) //= 0x02960000;//0x02960000;//0x029c0000;//512kb way//0x029c0000;//0x02860000;//0x72360000;
+    							   //= 0x960000;	// Pseudo-random replacement using lfsr.
+    							   = 0x2960000;	// Round-Robin replacement.
+    /* Lock way 0 */
+//    *(volatile u32 *)(0x0f8f02900) = 0x1;
+//    *(volatile u32 *)(0x0f8f02908) = 0x1;
+//    *(volatile u32 *)(0x0f8f02910) = 0x1;
+//    *(volatile u32 *)(0x0f8f02918) = 0x1;
+//    *(volatile u32 *)(0x0f8f02920) = 0x1;
+//    *(volatile u32 *)(0x0f8f02928) = 0x1;
+//    *(volatile u32 *)(0x0f8f02930) = 0x1;
+//    *(volatile u32 *)(0x0f8f02938) = 0x1;
+
+    /* Only way 7 is not locked */
+    *(volatile u32 *)(0x0f8f02900) = 0xEF;
+    *(volatile u32 *)(0x0f8f02908) = 0xEF;
+    *(volatile u32 *)(0x0f8f02910) = 0xEF;
+    *(volatile u32 *)(0x0f8f02918) = 0xEF;
+    *(volatile u32 *)(0x0f8f02920) = 0xEF;
+    *(volatile u32 *)(0x0f8f02928) = 0xEF;
+    *(volatile u32 *)(0x0f8f02930) = 0xEF;
+    *(volatile u32 *)(0x0f8f02938) = 0xEF;
+
+    /* Configure the Auxiliary Control Register in CP15 */
+    asm volatile("mrc p15, 0, %0, c1, c0, 1\n" : "=r" (actlr_info));
+    actlr_info &= ~0b0110;
+    //actlr_info |= (0x1<<8);	// alloc one way
+    asm volatile("mcr p15, 0, %0, c1, c0, 1\n" : "+r" (actlr_info));
+
+    /* #### The replacement policy for cache/mmu cannot be modified in non-secure state. #### */
+    /* rr */
+//  asm volatile("mrc p15, 0, %0, c1, c0, 0\n" : "=r" (sctlr_info));
+//  sctlr_info |=1<<14; // (round robin)
+//	asm volatile("mcr p15, 0, %0, c1, c0, 0\n" : "+r" (sctlr_info));
+    /* end rr */
+
+    // Turn the caches back on.
+    Xil_L1ICacheEnable();
+    Xil_L1DCacheEnable();
+    Xil_L2CacheEnable();
+
+
+    xil_printf("\r\n");
+    xil_printf("Cache configuration: \r\n");
+#ifdef	USE_L1_I_CACHE
+    xil_printf("  L1 I-Cache:\t enabled (default) \r\n");
+#else
+    xil_printf("  L1 I-Cache:\t disabled \r\n");
+    Xil_L1ICacheDisable();
+#endif
+
+#ifdef	USE_L1_D_CACHE
+    xil_printf("  L1 D-Cache:\t enabled (default) \r\n");
+#else
+    xil_printf("  L1 D-Cache:\t disabled \r\n");
+    Xil_L1DCacheDisable();
+#endif
+
+#ifdef	USE_L2_CACHE
+    xil_printf("  L2 Cache:\t enabled (default) \r\n");
+#else
+    xil_printf("  L2 Cache:\t disabled \r\n");
+    Xil_L2CacheDisable();
+#endif
+
+
+    cache_id_reg = *(volatile u32 *)(0x0f8f02000);
+    xil_printf("\r\n");
+    xil_printf("Cache ID = 0x%x \r\n", cache_id_reg);
+    xil_printf("[9:6]\t Part Number=\t %d \r\n"
+    		   "[5:0]\t RTL Release=\t %d \r\n",
+    		   (cache_id_reg>>6)&0xF,
+    		   (cache_id_reg>>0)&0x3F);
+
+    aux = *(volatile u32 *)(0x0f8f02104);
+    xil_printf("\r\n");
+    xil_printf("L2 PL310 Auxiliary Control Register (ACTLR):\r\n");
+    xil_printf("ACTLR = 0x%x \r\n", aux);
+    xil_printf("[31]\t Reserved=\t %d \r\n"
+    		   "[30]\t EarlyBRESP=\t %d \r\n"
+    		   "[29]\t I-Prefetch=\t %d \r\n"
+    		   "[28]\t D-Prefetch=\t %d \r\n"
+               "[27]\t NonSecInt=\t %d \r\n"
+               "[26]\t NonSecLock=\t %d \r\n"
+    		   "[25]\t Replacement=\t %d \r\n"
+               "[24:23]\t ForceWrite=\t %d \r\n"
+               "[22]\t SharedApp=\t %d \r\n"
+               "[21]\t Parity=\t %d \r\n"
+               "[20]\t EventMon=\t %d \r\n"
+               "[19:17]\t WaySize=\t %d \r\n"
+               "[16]\t Associative=\t %d \r\n"
+    		   "[15:14]\t Reserved=\t %d \r\n"
+    		   "[13]\t SharedAttri=\t %d \r\n"
+               "[12]\t Exclusive=\t %d \r\n"
+               "[11]\t BufferLimit=\t %d \r\n"
+   	           "[10]\t HighPrioSO=\t %d \r\n"
+    	 	   "[9:1]\t Reserved=\t %d \r\n"
+   	           "[0]\t FullLineZero=\t %d \r\n",
+   	           (aux>>31)&1,
+   	           (aux>>30)&1,
+   	           (aux>>29)&1,
+               (aux>>28)&1,
+               (aux>>27)&1,
+               (aux>>26)&1,
+               (aux>>25)&1,
+               (aux>>23)&3,
+               (aux>>22)&1,
+               (aux>>21)&1,
+               (aux>>20)&1,
+               (aux>>17)&7,
+               (aux>>16)&1,
+               (aux>>14)&3,
+               (aux>>13)&1,
+               (aux>>12)&1,
+               (aux>>6)&7,
+               (aux>>10)&1,
+               (aux>>1)&7,
+               (aux>>0)&1);
+
+    asm volatile("mrc p15, 0, %0, c1, c0, 1\n"
+                         : "=r" (actlr_info));
+    xil_printf("\r\n");
+    xil_printf("Auxiliary Control Register (CP15): \r\n");
+    xil_printf("ACTLR = 0x%x \r\n", actlr_info);
+    xil_printf( "[9]\t Parity=\t %d \r\n"
+    			"[8]\t AllocOneWay=\t %d \r\n"
+                "[7]\t Exclusive=\t %d \r\n"
+                "[6]\t SMP=\t\t %d \r\n"
+                "[3]\t LineZeros=\t %d \r\n"
+                "[2]\t L1 Prefetch=\t %d \r\n"
+                "[1]\t L2 Prefetch=\t %d \r\n"
+                "[0]\t TLBBroadcast=\t %d \r\n",
+             	(actlr_info>>9)&1,
+             	(actlr_info>>8)&1,
+             	(actlr_info>>7)&1,
+             	(actlr_info>>6)&1,
+             	(actlr_info>>3)&1,
+             	(actlr_info>>2)&1,
+             	(actlr_info>>1)&1,
+             	(actlr_info>>0)&1);
+
+
+	/* Print system configurations. */
+	xil_printf("\r\n");
+	xil_printf("Condition:\r\n");
+	xil_printf("  (2 Tasks are running under FreeRTOS.)\r\n");
+	xil_printf("  - HackerTask: \r\n");
+	xil_printf("      delay = %dms\r\n", HACKER_TASK_DELAY_TIME_MS);
+	xil_printf("      buffer = %d-byte\r\n", SIZE_OF_HACKER_ARRAY*4);
+	xil_printf("      priority = %d\r\n", HACKER_TASK_PRIORITY);
+	xil_printf("  - AppTask: \r\n");
+	xil_printf("      delay = %dms\r\n", APP_TASK_DELAY_TIME_MS);
+	xil_printf("      buffer = %d-byte\r\n", SIZE_OF_APP_ARRAY*4);
+	xil_printf("      priority = %d\r\n", APP_TASK_PRIORITY);
+	xil_printf("\r\n");
+	xil_printf("-------------------------------\r\n");
+
+	xil_printf("\r\n");
+
+    /* Initialize the event counter of L2 cache. */
+    XL2cc_EventCtrInit(XL2CC_DRHIT, XL2CC_DRREQ);
+    // XL2CC_DRHIT: Data read hit
+    // XL2CC_DRREQ: Data read request
+
+    /* Basic L2 cache test */
+    vDataCacheFlush();
+    xil_printf("[Cache Flush]\r\n");
+
+    XL2cc_EventCtrStart();
+    getTimeLoadLineIntArrayRange(hackerArray, LINE_OF_HACKER_ARRAY);
+	XL2cc_EventCtrStop(&u32EventCounter0, &u32EventCounter1);
+	xil_printf("Test Line %d Read:\t#Request=%d\t #Hit=%d \r\n", LINE_OF_HACKER_ARRAY, u32EventCounter1, u32EventCounter0);
+
+    XL2cc_EventCtrStart();
+    getTimeLoadLineIntArrayRange(hackerArray, LINE_OF_HACKER_ARRAY);
+	XL2cc_EventCtrStop(&u32EventCounter0, &u32EventCounter1);
+	xil_printf("Test Line %d Read:\t#Request=%d\t #Hit=%d \r\n", LINE_OF_HACKER_ARRAY, u32EventCounter1, u32EventCounter0);
+
+    vDataCacheFlush();
+    xil_printf("\r\n");
+    xil_printf("[Cache Flush]\r\n");
+
+    XL2cc_EventCtrStart();
+    getTimeLoadLineIntArrayRange(hackerArray, LINE_OF_HACKER_ARRAY);
+	XL2cc_EventCtrStop(&u32EventCounter0, &u32EventCounter1);
+	xil_printf("[Array 1] Test Line %d Read:\t#Request=%d\t #Hit=%d \r\n", LINE_OF_HACKER_ARRAY, u32EventCounter1, u32EventCounter0);
+
+    XL2cc_EventCtrStart();
+    getTimeLoadLineIntArrayRange(hackerArray, LINE_OF_HACKER_ARRAY);
+	XL2cc_EventCtrStop(&u32EventCounter0, &u32EventCounter1);
+	xil_printf("[Array 1] Test Line %d Read:\t#Request=%d\t #Hit=%d \r\n", LINE_OF_HACKER_ARRAY, u32EventCounter1, u32EventCounter0);
+
+    XL2cc_EventCtrStart();
+    getTimeLoadLineIntArrayRange(u32AppArray, LINE_OF_APP_ARRAY);
+	XL2cc_EventCtrStop(&u32EventCounter0, &u32EventCounter1);
+	xil_printf("[Array 2] Test Line %d Read:\t#Request=%d\t #Hit=%d \r\n", LINE_OF_APP_ARRAY, u32EventCounter1, u32EventCounter0);
+
+    XL2cc_EventCtrStart();
+    getTimeLoadLineIntArrayRange(u32AppArray, LINE_OF_APP_ARRAY);
+	XL2cc_EventCtrStop(&u32EventCounter0, &u32EventCounter1);
+	xil_printf("[Array 2] Test Line %d Read:\t#Request=%d\t #Hit=%d \r\n", LINE_OF_APP_ARRAY, u32EventCounter1, u32EventCounter0);
+
+    XL2cc_EventCtrStart();
+    getTimeLoadLineIntArrayRange(hackerArray, LINE_OF_HACKER_ARRAY);
+	XL2cc_EventCtrStop(&u32EventCounter0, &u32EventCounter1);
+	xil_printf("[Array 1] Test Line %d Read:\t#Request=%d\t #Hit=%d \r\n", LINE_OF_HACKER_ARRAY, u32EventCounter1, u32EventCounter0);
+
+
+    vDataCacheFlush();
+    xil_printf("\r\n");
+    xil_printf("[Cache Flush]\r\n");
+
+    XL2cc_EventCtrStart();
+    getTimeLoadIntArrayRange(hackerArray, SIZE_OF_HACKER_ARRAY);
+	XL2cc_EventCtrStop(&u32EventCounter0, &u32EventCounter1);
+	xil_printf("Test Word %d Read:\t#Request=%d\t #Hit=%d \r\n", SIZE_OF_HACKER_ARRAY, u32EventCounter1, u32EventCounter0);
+
+    XL2cc_EventCtrStart();
+    getTimeLoadIntArrayRange(hackerArray, SIZE_OF_HACKER_ARRAY);
+	XL2cc_EventCtrStop(&u32EventCounter0, &u32EventCounter1);
+	xil_printf("Test Word %d Read:\t#Request=%d\t #Hit=%d \r\n", SIZE_OF_HACKER_ARRAY, u32EventCounter1, u32EventCounter0);
+
+    vDataCacheFlush();
+    xil_printf("\r\n");
+    xil_printf("[Cache Flush]\r\n");
+
+    XL2cc_EventCtrStart();
+    getTimeLoadIntArrayRange(hackerArray, SIZE_OF_HACKER_ARRAY);
+	XL2cc_EventCtrStop(&u32EventCounter0, &u32EventCounter1);
+	xil_printf("[Array 1] Test Word %d Read:\t#Request=%d\t #Hit=%d \r\n", SIZE_OF_HACKER_ARRAY, u32EventCounter1, u32EventCounter0);
+
+    XL2cc_EventCtrStart();
+    getTimeLoadIntArrayRange(hackerArray, SIZE_OF_HACKER_ARRAY);
+	XL2cc_EventCtrStop(&u32EventCounter0, &u32EventCounter1);
+	xil_printf("[Array 1] Test Word %d Read:\t#Request=%d\t #Hit=%d \r\n", SIZE_OF_HACKER_ARRAY, u32EventCounter1, u32EventCounter0);
+
+    XL2cc_EventCtrStart();
+    getTimeLoadIntArrayRange(u32AppArray, SIZE_OF_APP_ARRAY);
+	XL2cc_EventCtrStop(&u32EventCounter0, &u32EventCounter1);
+	xil_printf("[Array 2] Test Word %d Read:\t#Request=%d\t #Hit=%d \r\n", SIZE_OF_APP_ARRAY, u32EventCounter1, u32EventCounter0);
+
+    XL2cc_EventCtrStart();
+    getTimeLoadIntArrayRange(u32AppArray, SIZE_OF_APP_ARRAY);
+	XL2cc_EventCtrStop(&u32EventCounter0, &u32EventCounter1);
+	xil_printf("[Array 2] Test Word %d Read:\t#Request=%d\t #Hit=%d \r\n", SIZE_OF_APP_ARRAY, u32EventCounter1, u32EventCounter0);
+
+    XL2cc_EventCtrStart();
+    getTimeLoadIntArrayRange(hackerArray, SIZE_OF_HACKER_ARRAY);
+	XL2cc_EventCtrStop(&u32EventCounter0, &u32EventCounter1);
+	xil_printf("[Array 1] Test Word %d Read:\t#Request=%d\t #Hit=%d \r\n", SIZE_OF_HACKER_ARRAY, u32EventCounter1, u32EventCounter0);
+
+	xil_printf("\r\n");
+	xil_printf("-------------------------------\r\n");
+	//xil_printf("Bytes\tTime\thex(Start, End)\r\n");
+	//xil_printf("Bytes\tCycles\t\r\n");
+	xil_printf("-------------------------------\r\n");
+
+	plotCacheLineHit();
+
+	xil_printf("-------------------------------\r\n");
+
+	plotCacheLineMiss();
+
+	xil_printf("-------------------------------\r\n");
+
+	plotCacheLineHitMiss();
+
+	xil_printf("-------------------------------\r\n");
+
+	xTaskCreate( prvAppTask,			/* The function that implements the task. */
+					"App", 				/* The text name assigned to the task - for debug only as it is not used by the kernel. */
+					APP_TASK_STACK_SIZE, 				/* The size of the stack to allocate to the task. */
+					NULL, 				/* The parameter passed to the task - not used in this case. */
+					APP_TASK_PRIORITY, 	/* The priority assigned to the task. */
+					NULL );				/* The task handle is not required, so NULL is passed. */
+
+	xTaskCreate( prvHackerTask,			/* The function that implements the task. */
+					"Hacker", 			/* The text name assigned to the task - for debug only as it is not used by the kernel. */
+					HACKER_TASK_STACK_SIZE, 				/* The size of the stack to allocate to the task. */
+					NULL, 				/* The parameter passed to the task - not used in this case. */
+					HACKER_TASK_PRIORITY, 	/* The priority assigned to the task. */
+					NULL );
+
+
+	/* Start the tasks and timer running. */
+	vTaskStartScheduler();
+
+
+	while (1);
+
+}
+
+/*****************************************************************************/
+/**
+* A FreeRTOS task function
+* Keep monitoring the cache utilization of other tasks by measuring the time
+* difference of accessing cache caused by cache hit and cache miss.
+*
+* @param	None
+*
+* @return	None
+*
+* @note		None.
+*
+******************************************************************************/
+//u32 hackerArray[SIZE_OF_HACKER_ARRAY];	// Too big to fit the stack size limit of a FreeRTOS task.
+static void prvHackerTask( void *pvParameters ){
+	u32 u32TimeDiff;
+	u32 u32MissEstimation;
+	//u32 u32EventCounter0, u32EventCounter1;
+
+	/* Fill the cache. */
+	taskENTER_CRITICAL();
+	vDataCacheFlush();
+	getTimeLoadIntArrayRange(hackerArray, SIZE_OF_HACKER_ARRAY);
+	taskEXIT_CRITICAL();
+
+	while (1){
+
+		taskENTER_CRITICAL();
+
+		// Start L2 event counter.
+		//getTimeLoadLineIntArrayRange(hackerArray, LINE_OF_HACKER_ARRAY);
+		XL2cc_EventCtrStart();
+
+		//u32TimeDiff = getTimeLoadIntArrayRange(hackerArray, SIZE_OF_HACKER_ARRAY);
+		u32TimeDiff = getTimeLoadLineIntArrayRange(hackerArray, LINE_OF_HACKER_ARRAY);
+
+		// Stop and get the event counter values.
+		XL2cc_EventCtrStop(&u32EventCounter0, &u32EventCounter1);
+		//xil_printf("\t#Hit=%d,Req=%d", u32EventCounter0, u32EventCounter1);
+		xil_printf("\t%d\t%d", u32EventCounter0, u32EventCounter1);
+
+		// H+M=512000/32 lines = 16000 lines
+		// H = 16000 - M
+		// Ch*H + Cm*M = u32TimeDiff
+		// 50*H + 77*M = u32TimeDiff
+		// Thus, 50*(16000-M) + 77*M = u32TimeDiff
+		//       27M = u32TimeDiff - 50*16000
+		//	       M = u32TimeDiff/27 - 22500
+		u32MissEstimation = (u32TimeDiff/(C_M_LINE-C_H_LINE)) - C_H_LINE*LINE_OF_HACKER_ARRAY/(C_M_LINE-C_H_LINE);
+
+		//xil_printf("\t%d : %d", u32TimeDiff, u32MissEstimation<<5);
+		xil_printf("\t%d : %d", u32TimeDiff, u32MissEstimation);
+		// [cycles of 512kB miss] - u32TimeDiff = [time of X-Byte hit]
+		// [time of X-Byte hit] / [time of 1-Byte hit] = [Y-Byte used by others]
+
+
+		vDataCacheFlush();
+		getTimeLoadLineIntArrayRange(hackerArray, LINE_OF_HACKER_ARRAY);
+
+		taskEXIT_CRITICAL();
+		vTaskDelay( HACKER_TASK_DELAY_TIME_MS );
+
+	}
+}
+
+/*****************************************************************************/
+/**
+* The application task, a FreeRTOS task function
+* It keeps a loop filling (reading) the cache from 0KB~512KB.
+*
+* @param	None
+*
+* @return	None
+*
+* @note		None.
+*
+******************************************************************************/
+//u32 u32AppArray[SIZE_OF_APP_ARRAY];	// Too big to fit the stack size limit of a FreeRTOS task.
+static void prvAppTask(void *pvParameters){
+	u32 ulLoop, ulLoop1, ulLoop2, temp;
+	vTaskDelay( 10 / portTICK_RATE_MS );	// Let hacker task run for a while.
+
+	//while (1){
+	for (ulLoop1=0; ulLoop1<TEST_CYCLES; ulLoop1++) {
+
+	#ifdef	TEST_STEP_BYTE
+		for (ulLoop=0; ulLoop <= SIZE_OF_APP_ARRAY; ulLoop+=TEST_STEP_BYTE/4){
+			taskENTER_CRITICAL();
+
+		    XL2cc_EventCtrStart();
+			getTimeLoadIntArrayRange(u32AppArray, ulLoop);	// Note that the unit of data read is 4-byte.
+			XL2cc_EventCtrStop(&u32EventCounter0, &u32EventCounter1);
+
+			xil_printf("\r\n%d", ulLoop<<2);	// <<2 = *4
+			xil_printf("\t#App#Hit=%d,Req=%d", u32EventCounter0, u32EventCounter1);
+
+			taskEXIT_CRITICAL();
+			vTaskDelay( APP_TASK_DELAY_TIME_MS );
+		}
+	#elif	TEST_STEP_LINE
+		for (ulLoop=0; ulLoop <= LINE_OF_APP_ARRAY; ulLoop+=TEST_STEP_LINE){
+			taskENTER_CRITICAL();
+
+		    //XL2cc_EventCtrStart();
+		    getTimeLoadLineIntArrayRange(u32AppArray, ulLoop);	// Line read function.
+			//XL2cc_EventCtrStop(&u32EventCounter0, &u32EventCounter1);
+
+			xil_printf("\r\n%d", ulLoop);	// Number of lines read
+			//xil_printf("\t#App#Hit=%d,Req=%d", u32EventCounter0, u32EventCounter1);
+
+			taskEXIT_CRITICAL();
+			vTaskDelay( APP_TASK_DELAY_TIME_MS );
+		}
+	#endif
+	}
+	taskENTER_CRITICAL();
+	while(1);
+}
+
+void plotCacheLineHit(void)
+{
+	u32 loop, u32TimeDiff;
+
+	xil_printf("\r\n plotCacheLineHit \r\n");
+	for (loop=0; loop<=LINE_OF_HACKER_ARRAY; loop+=TEST_STEP_LINE) {
+		vDataCacheFlush();
+		getTimeLoadLineIntArrayRange(u32AppArray, LINE_OF_HACKER_ARRAY);
+		getTimeLoadLineIntArrayRange(hackerArray, loop);
+		u32TimeDiff = getTimeLoadLineIntArrayRange(hackerArray, loop);
+		xil_printf("%d\t %d \r\n", loop, u32TimeDiff);
+	}
+}
+
+void plotCacheLineMiss(void)
+{
+	u32 loop, u32TimeDiff;
+
+	xil_printf("\r\n plotCacheLineMiss \r\n");
+	for (loop=0; loop<=LINE_OF_HACKER_ARRAY; loop+=TEST_STEP_LINE) {
+		vDataCacheFlush();
+		getTimeLoadLineIntArrayRange(u32AppArray, LINE_OF_HACKER_ARRAY);
+		u32TimeDiff = getTimeLoadLineIntArrayRange(hackerArray, loop);
+		xil_printf("%d\t %d \r\n", loop, u32TimeDiff);
+	}
+}
+
+void plotCacheLineHitMiss(void)
+{
+	u32 loop, u32TimeDiff;
+
+	xil_printf("\r\n plotCacheLine Hit+Miss \r\n");
+	for (loop=0; loop<=LINE_OF_HACKER_ARRAY; loop+=TEST_STEP_LINE) {
+		vDataCacheFlush();
+		getTimeLoadLineIntArrayRange(hackerArray, LINE_OF_HACKER_ARRAY);
+		getTimeLoadLineIntArrayRange(u32AppArray, loop);
+		u32TimeDiff = getTimeLoadLineIntArrayRange(hackerArray, LINE_OF_HACKER_ARRAY);
+		xil_printf("%d\t %d \r\n", loop, u32TimeDiff);
+	}
+}

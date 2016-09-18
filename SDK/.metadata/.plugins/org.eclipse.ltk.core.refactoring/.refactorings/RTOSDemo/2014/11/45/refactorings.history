@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename resource &apos;RTOSDemo/src/TimingAttack_Demo/aes&apos; to &apos;crypto_aes&apos;" description="Rename resource &apos;aes&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="src/TimingAttack_Demo/aes" name="crypto_aes" stamp="1415260189371" updateReferences="true"/>
+</session>

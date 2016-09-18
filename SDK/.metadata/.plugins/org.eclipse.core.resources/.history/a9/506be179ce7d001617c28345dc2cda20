@@ -1,0 +1,199 @@
+/*
+ * main_attack.c
+ *
+ *  Created on: Oct 29, 2014
+ *      Author: CY
+ */
+
+/* Kernel includes. */
+#include "FreeRTOS.h"
+#include "task.h"
+//#include "partest.h"
+
+/* L2 event counter */
+#include "xl2cc_counter.h"
+
+
+/* For recording log. */
+#include "LogUtility/LogUtility.h"
+
+#include "SytheticTasks.h"
+
+u32 u32EventCounter0, u32EventCounter1;
+u32 mainTestArray[SIZE_OF_HACKER_ARRAY];
+u32 mainTestArray2[SIZE_OF_HACKER_ARRAY];
+
+LogList hackerLogList;
+LogList appLogList;
+LogList schedulerLogList;
+
+
+void main_myProgram( void )
+{
+    xil_printf("My program starts. \r\n");
+
+    // Disable caches (if needed).
+    //Xil_L1ICacheDisable();
+    //Xil_L1DCacheDisable();
+    //Xil_L2CacheDisable();
+
+	// Initialize logs
+	initLogList(&hackerLogList);
+	initLogList(&appLogList);
+	initLogList(&schedulerLogList);
+
+	createSyntheicTasks();
+//
+//	xTaskCreate( prvAesTask,			/* The function that implements the task. */
+//					"APP-1", 			/* The text name assigned to the task - for debug only as it is not used by the kernel. */
+//					AES_TASK_STACK_SIZE,/* The size of the stack to allocate to the task. */
+//					NULL, 				/* The parameter passed to the task - not used in this case. */
+//					AES_TASK_PRIORITY, 	/* The priority assigned to the task. */
+//					NULL );				/* The task handle is not required, so NULL is passed. */
+//
+//
+//	xTaskCreate( prvApp2Task,			/* The function that implements the task. */
+//					"APP-2", 			/* The text name assigned to the task - for debug only as it is not used by the kernel. */
+//					APP2_TASK_STACK_SIZE,	/* The size of the stack to allocate to the task. */
+//					NULL, 				/* The parameter passed to the task - not used in this case. */
+//					APP2_TASK_PRIORITY, /* The priority assigned to the task. */
+//					NULL );				/* The task handle is not required, so NULL is passed. */
+//
+//
+//	xTaskCreate( prvApp3Task,			/* The function that implements the task. */
+//					"APP-3", 				/* The text name assigned to the task - for debug only as it is not used by the kernel. */
+//					APP3_TASK_STACK_SIZE, 				/* The size of the stack to allocate to the task. */
+//					NULL, 				/* The parameter passed to the task - not used in this case. */
+//					APP3_TASK_PRIORITY, 	/* The priority assigned to the task. */
+//					NULL );				/* The task handle is not required, so NULL is passed. */
+
+	xTaskCreate( prvHackerTask,			/* The function that implements the task. */
+					HIGH_HACKER_TASK_NAME, 			/* The text name assigned to the task - for debug only as it is not used by the kernel. */
+					HACKER_TASK_STACK_SIZE, 				/* The size of the stack to allocate to the task. */
+					NULL, 				/* The parameter passed to the task - not used in this case. */
+					HACKER_TASK_PRIORITY, 	/* The priority assigned to the task. */
+					NULL );
+
+//	xTaskCreate( prvLowHackerTask,			/* The function that implements the task. */
+//					LOW_HACKER_TASK_NAME, 			/* The text name assigned to the task - for debug only as it is not used by the kernel. */
+//					LOW_HACKER_TASK_STACK_SIZE, 				/* The size of the stack to allocate to the task. */
+//					NULL, 				/* The parameter passed to the task - not used in this case. */
+//					LOW_HACKER_TASK_PRIORITY, 	/* The priority assigned to the task. */
+//					NULL );
+
+	xTaskCreate( prvExperimentControlTask,	/* The function that implements the task. */
+					"ExpCtrl", 		/* The text name assigned to the task - for debug only as it is not used by the kernel. */
+					EXP_TASK_STACK_SIZE,/* The size of the stack to allocate to the task. */
+					NULL, 				/* The parameter passed to the task - not used in this case. */
+					EXP_TASK_PRIORITY, 	/* The priority assigned to the task. */
+					NULL );				/* The task handle is not required, so NULL is passed. */
+
+	/* Start the tasks and timer running. */
+	vTaskStartScheduler();
+
+
+	while (1);
+
+}
+
+
+void prvExperimentControlTask( void *pvParameters )
+{
+	TickType_t xLastWakeTime;
+	xLastWakeTime = xTaskGetTickCount();
+	while (1)
+	{
+		// Set the next wake-up time which exactly the experiment period.
+		vTaskDelayUntil( &xLastWakeTime, EXP_TASK_PERIOD_MS );
+
+		taskENTER_CRITICAL();
+
+		outputHackerTaskList();
+
+		outputTaskList();
+
+		xil_printf("\r\n@SchedulerLog\r\n");
+		outputLogList(&schedulerLogList);
+
+		xil_printf("\r\n@AppLog\r\n");
+		outputLogList(&appLogList);
+
+		xil_printf("\r\n@HackerLog\r\n");
+		outputLogList(&hackerLogList);
+
+		if (STOP_AFTER_EXP_PERIOD)
+		{
+			while (1);	// Loop forever to stop the experiment.
+		}
+		else
+		{
+			// Exit critical section and continue the experiment.
+			taskEXIT_CRITICAL();
+		}
+	}
+}
+
+
+void plotCacheLineHit(void)
+{
+	u32 loop, u32TimeDiff;
+
+	xil_printf("\r\n plotCacheLineHit \r\n");
+	for (loop=0; loop<=LINE_OF_HACKER_ARRAY; loop+=TEST_STEP_LINE) {
+		vDataCacheFlush();
+		//getTimeLoadLineIntArrayRange(u32AppArray, LINE_OF_HACKER_ARRAY);
+		getTimeLoadLineIntArrayRange(mainTestArray, LINE_OF_HACKER_ARRAY-loop);
+		u32TimeDiff = getTimeLoadLineIntArrayRange(mainTestArray, LINE_OF_HACKER_ARRAY-loop);
+		xil_printf("%d\t %d \r\n", loop, u32TimeDiff);
+	}
+}
+
+void plotCacheLineMiss(void)
+{
+	u32 loop, u32TimeDiff;
+
+	xil_printf("\r\n plotCacheLineMiss \r\n");
+	for (loop=0; loop<=LINE_OF_HACKER_ARRAY; loop+=TEST_STEP_LINE) {
+		vDataCacheFlush();
+		//getTimeLoadLineIntArrayRange(u32AppArray, LINE_OF_HACKER_ARRAY);
+		u32TimeDiff = getTimeLoadLineIntArrayRange(mainTestArray, loop);
+		xil_printf("%d\t %d \r\n", loop, u32TimeDiff);
+	}
+}
+
+void plotCacheLineHitMiss(void)
+{
+	u32 loop, u32TimeDiff, u32MissEstimation;
+
+	xil_printf("\r\n plotCacheLine Hit+Miss \r\n");
+	for (loop=0; loop<=LINE_OF_HACKER_ARRAY; loop+=TEST_STEP_LINE) {
+		vDataCacheFlush();
+		getTimeLoadLineIntArrayRange(mainTestArray, LINE_OF_HACKER_ARRAY-loop);
+		u32TimeDiff = getTimeLoadLineIntArrayRange(mainTestArray, LINE_OF_HACKER_ARRAY);
+
+		u32MissEstimation = (u32TimeDiff/(C_M_LINE-C_H_LINE)) - C_H_LINE*LINE_OF_HACKER_ARRAY/(C_M_LINE-C_H_LINE);
+
+		xil_printf("%d\t %d\t %d \r\n", loop, u32TimeDiff, u32MissEstimation);
+	}
+}
+
+void testRandom(void)
+{
+	u32 loop, u32TimeDiff;
+
+	xil_printf("\r\n testRandom \r\n");
+
+	vDataCacheFlush();
+	getTimeLoadLineIntArrayRange(mainTestArray2, LINE_OF_HACKER_ARRAY);
+
+	for (loop=0; loop<=LINE_OF_HACKER_ARRAY; loop+=TEST_STEP_LINE) {
+
+		getTimeLoadLineIntArrayRange(mainTestArray2, LINE_OF_HACKER_ARRAY);
+
+		XL2cc_EventCtrStart();
+		getTimeLoadLineIntArrayRange(mainTestArray, LINE_OF_HACKER_ARRAY-loop);
+		XL2cc_EventCtrStop(&u32EventCounter0, &u32EventCounter1);
+
+		xil_printf("\r\n( %d\t%d )", u32EventCounter0, u32EventCounter1);
+	}
+}

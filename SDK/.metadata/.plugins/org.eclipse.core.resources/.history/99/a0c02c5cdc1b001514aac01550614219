@@ -1,0 +1,38 @@
+/*
+ * AttackConfig.h
+ *
+ *  Created on: Nov 2, 2014
+ *      Author: CY
+ */
+
+#ifndef ATTACKCONFIG_H_
+#define ATTACKCONFIG_H_
+
+#include <xil_types.h>
+
+/*
+ * Program configuration:
+ * Comment out the line if the function is unused.
+ */
+//#define		USE_L1_I_CACHE
+//#define		USE_L1_D_CACHE
+#define			USE_L2_CACHE
+
+#define CHACHE_FLUSH_TYPE			1
+
+// The macro for getting lower 32-bit value from the global timer.
+#define	GET_GTIMER_LOWER	*(volatile u32 *) (GLOBAL_TMR_BASEADDR + GTIMER_COUNTER_LOWER_OFFSET);
+
+#define	TEST_STEP_LINE				50
+
+/* Define for experiment task. */
+void prvExperimentControlTask( void *pvParameters );
+
+#define	EXP_TASK_PRIORITY		tskIDLE_PRIORITY + 5	// Bigger number means higher priority.
+#define	EXP_TASK_PERIOD_MS		( 500/portTICK_RATE_MS )
+#define EXP_TASK_STACK_SIZE		100
+
+#define	STOP_AFTER_EXP_PERIOD	TRUE
+
+
+#endif /* ATTACKCONFIG_H_ */
