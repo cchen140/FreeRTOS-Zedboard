@@ -152,7 +152,7 @@ static void prvSetupHardware( void );
 #elif ( mainSELECTED_APPLICATION == 2 )
 	extern void main_lwIP( void );
 #elif ( mainSELECTED_APPLICATION == 3 )
-	extern void main_attack( void );	// Added by CY Chen
+	extern void main_myProgram( void );	// Added by CY Chen
 #else
 	#error Invalid mainSELECTED_APPLICATION setting.  See the comments at the top of this file and above the mainSELECTED_APPLICATION definition.
 #endif /* #if mainCREATE_SIMPLE_BLINKY_DEMO_ONLY == 1 */
@@ -187,6 +187,7 @@ XScuGic xInterruptController;
 int main( void )
 {
 	/* Configure the hardware ready to run the demo. */
+	// Note: Serial port runs at baudrate 115200.
 	prvSetupHardware();
 
 	/* The mainSELECTED_APPLICATION setting is described at the top
