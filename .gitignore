@@ -1,7 +1,5 @@
 # Object files
 *.o
-
-# Libraries
-*.a
+*.d
 
 SDK/
