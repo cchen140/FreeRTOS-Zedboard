@@ -16,12 +16,12 @@ ELFSIZE :=
 
 # Every subdirectory with source files must be described here
 SUBDIRS := \
-src/FreeRTOS_Source \
-src/FreeRTOS_Source/portable/GCC/ARM_CA9 \
-src/FreeRTOS_Source/portable/MemMang \
 src \
-src/MyProgram/LogUtility \
-src/MyProgram \
-src/MyProgram/crypto_aes \
 src/MyProgram/v7_pmu \
+src/MyProgram/crypto_aes \
+src/MyProgram \
+src/MyProgram/LogUtility \
+src/FreeRTOS_Source \
+src/FreeRTOS_Source/portable/MemMang \
+src/FreeRTOS_Source/portable/GCC/ARM_CA9 \
 
