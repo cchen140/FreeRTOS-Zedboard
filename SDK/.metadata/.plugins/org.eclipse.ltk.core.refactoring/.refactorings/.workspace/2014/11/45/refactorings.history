@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<session version="1.0">
-<refactoring comment="Delete resource &apos;RTOSDemo/src/TimingAttack_Demo/Copy of main_attack_backup_1104.c&apos;" deleteContents="false" description="Delete resource &apos;RTOSDemo/src/TimingAttack_Demo/Copy of main_attack_backup_1104.c&apos;" element1="/RTOSDemo/src/TimingAttack_Demo/Copy of main_attack_backup_1104.c" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="1" stamp="1415145844708"/>
-</session>
