@@ -10,6 +10,7 @@
 
 #include <xil_types.h>
 
+void createSyntheticTasks(void);
 void prvGeneralSyntheticTask(void *pvParameters);
 //void prvAesTask( void *pvParameters );
 
