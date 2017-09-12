@@ -1,4 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<session version="1.0">
-<refactoring comment="Rename resource &apos;RTOSDemo/src/TimingAttack_Demo/LogUtility&apos; to &apos;LogUtility.c&apos;" description="Rename resource &apos;LogUtility&apos;" flags="7" id="org.eclipse.ltk.core.refactoring.rename.resource" input="src/TimingAttack_Demo/LogUtility" name="LogUtility.c" stamp="1421867772005" updateReferences="true"/>
-</session>
