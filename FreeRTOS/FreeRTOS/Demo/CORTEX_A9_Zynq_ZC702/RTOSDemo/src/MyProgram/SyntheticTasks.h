@@ -10,6 +10,9 @@
 
 #include <xil_types.h>
 
+// The macro for getting lower 32-bit value from the global timer.
+#define	GET_GTIMER_LOWER	*(volatile u32 *) (GLOBAL_TMR_BASEADDR + GTIMER_COUNTER_LOWER_OFFSET);
+
 void createSyntheticTasks(void);
 void prvGeneralSyntheticTask(void *pvParameters);
 //void prvAesTask( void *pvParameters );

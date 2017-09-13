@@ -15,7 +15,7 @@
 //static volatile logNodeIndex = 0;
 
 /*
- * This function converts unigned long long to a string.
+ * This function converts unsigned long long to a string.
  * This function is from the following source:
  * https://stackoverflow.com/questions/3958449/unsigned-long-long-to-string-convert
  */
@@ -137,6 +137,7 @@ void feedLogNoCritical(LogList *inLogList, int inTaskId, u32 in_u32Data, char *i
 //	taskEXIT_CRITICAL();
 }
 
+unsigned long long earliestTimeStamp = 0;
 void outputLogList(LogList *inLogList)
 {
 
@@ -158,6 +159,13 @@ void outputLogList(LogList *inLogList)
 			TimeStamp (ns),
 		 */
 		unsigned long long thisTimeStampNs = ((unsigned long long)currentLogNode->u32TimeStamp)*3;
+//		if (earliestTimeStamp == 0) {
+//			earliestTimeStamp = thisTimeStampNs;
+//			thisTimeStampNs = 0;
+//		} else {
+//			thisTimeStampNs = thisTimeStampNs - earliestTimeStamp;
+//		}
+
 		char timeStampNsString[20];
 		ulltostr(thisTimeStampNs, timeStampNsString, 10);
 		//xil_printf("%d,\t%d,\t%d,\t\"%s\"\r\n", currentLogNode->u32TimeStamp*3, currentLogNode->logTask, currentLogNode->u32Data, currentLogNode->strNote);

@@ -17,7 +17,7 @@
 void prvExperimentControlTask( void *pvParameters );
 
 #define	EXP_TASK_PRIORITY		tskIDLE_PRIORITY + 5	// Bigger number means higher priority.
-#define	EXP_TASK_PERIOD_MS		( 10000/portTICK_RATE_MS )//( 400/portTICK_RATE_MS )
+#define	EXP_TASK_PERIOD_MS		( 1000/portTICK_RATE_MS )//( 400/portTICK_RATE_MS )
 #define EXP_TASK_STACK_SIZE		100
 
 #define	STOP_AFTER_EXP_PERIOD	FALSE//TRUE

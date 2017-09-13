@@ -17,6 +17,8 @@
 #include "LogUtility/LogUtility.h"
 
 #include "SyntheticTasks.h"
+#include "Scheduleak/ScheduleakAttacker.h"
+#include "Scheduleak/IntermittentInterval.h"
 
 #include "MyProgram.h"
 
@@ -26,6 +28,7 @@ u32 u32EventCounter0, u32EventCounter1;
 
 LogList appLogList;
 LogList schedulerLogList;
+LogList attackerLogList;
 
 
 void main_myProgram( void )
@@ -40,8 +43,11 @@ void main_myProgram( void )
 	// Initialize logs
 	initLogList(&appLogList);
 	initLogList(&schedulerLogList);
+	initLogList(&attackerLogList);
 
 	createSyntheticTasks();
+
+	createAttackerTasks();
 
 	xTaskCreate( prvExperimentControlTask,	/* The function that implements the task. */
 					"ExpCtrl", 		/* The text name assigned to the task - for debug only as it is not used by the kernel. */
@@ -58,7 +64,9 @@ void main_myProgram( void )
 
 }
 
-
+extern CapturedExecIntervals capturedExecIntervals;
+extern IntermittentInterval inferenceBase;
+extern u32 firstGtTimeCount;
 void prvExperimentControlTask( void *pvParameters )
 {
 	TickType_t xLastWakeTime;
@@ -70,6 +78,29 @@ void prvExperimentControlTask( void *pvParameters )
 
 		taskENTER_CRITICAL();
 
+		u32 i;
+		Interval *thisInterval;
+		for (i=0; i<capturedExecIntervals.count; i++) {
+			thisInterval = &(capturedExecIntervals.intervals[i]);
+			applyObserverTaskExecInterval(thisInterval->begin, thisInterval->end);
+		}
+		u32 inferenceResult = getArrivalTimeInference()*3;
+
+		xil_printf("\r\nInference Result = %d \r\n", inferenceResult);
+
+
+		/* Compute precision ratio. */
+		u32 victimPeriod = inferenceBase.baseEnd;
+		u32 initialArrival = (firstGtTimeCount%victimPeriod)*3;
+
+		double precisionRatio = 1- ((inferenceResult-initialArrival)/(double)(victimPeriod/2));
+		char output[50];
+		gcvt(precisionRatio,10,output);
+
+		xil_printf("PrecisionRatio = %s\r\n", output);
+
+
+
 		outputTaskList();
 
 		xil_printf("\r\n@SchedulerLog\r\n");
@@ -77,6 +108,9 @@ void prvExperimentControlTask( void *pvParameters )
 
 		xil_printf("\r\n@AppLog\r\n");
 		outputLogList(&appLogList);
+
+		xil_printf("\r\n@AttackerLog\r\n");
+		outputLogList(&attackerLogList);
 
 		if (STOP_AFTER_EXP_PERIOD)
 		{
@@ -89,3 +123,4 @@ void prvExperimentControlTask( void *pvParameters )
 		}
 	}
 }
+

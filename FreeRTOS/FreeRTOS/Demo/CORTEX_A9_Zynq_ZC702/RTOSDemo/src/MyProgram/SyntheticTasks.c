@@ -13,7 +13,7 @@ TaskParam appTaskParamArray[] = {
 	//  period (us), priority, computation time (us), computing size
 		{32000, APP_TASK_LOWEST_PRIORITY, 9600, 0},
 		{20000, APP_TASK_LOWEST_PRIORITY+1, 4300, 0},
-		{10000, APP_TASK_LOWEST_PRIORITY+2, 1900, 0}
+//		{10000, APP_TASK_LOWEST_PRIORITY+2, 1900, 0}
 //		,
 //		{20000, APP_TASK_LOWEST_PRIORITY+3, 100, 0},
 //		{18000, APP_TASK_LOWEST_PRIORITY+4, 100, 0},
@@ -69,6 +69,7 @@ void createSyntheticTasks(void)
 
 // Note that the arrays all the tasks read in this function are the same one.
 TickType_t firstTickCount = 0;
+u32 firstGtTimeCount = 0;
 void prvGeneralSyntheticTask(void *pvParameters)
 {
 	TaskParam *pvTaskParam = pvParameters;
@@ -76,7 +77,7 @@ void prvGeneralSyntheticTask(void *pvParameters)
 	char logString[30];
 
 	// For measuring execution time for analysis.
-//	u32 executionTime = 0;
+	//u32 executionTime = 0;
 
 	// Initialize the xLastWakeTime variable with the current time.
 	TickType_t xLastWakeTime;
@@ -86,27 +87,31 @@ void prvGeneralSyntheticTask(void *pvParameters)
 	if (firstTickCount == 0)
 	{
 		firstTickCount = xLastWakeTime;
+		firstGtTimeCount = GET_GTIMER_LOWER;
 	}
 	else
 	{
 		xLastWakeTime = firstTickCount;
 	}
 
+	/* Print ground truth for ScheduLeak experiments. */
+	//u32 presentGtTime = GET_GTIMER_LOWER;
+	u32 thisPeriod = pvTaskParam->periodUs*333;
+	u32 initialArrival = firstGtTimeCount%thisPeriod;
+	xil_printf("\r\nTask-%d:\t%d\r\n", getTaskId(), initialArrival*3);
+
 	while (TRUE)
 	{
 //		taskENTER_CRITICAL();
 //		executionTime = GET_GTIMER_LOWER;
 
-//		sprintf(logString, "Loading %d.", pvTaskParam->computeSize*4);
 		sprintf(logString, "BEGIN");    // print "BEGIN" to indicate the beginning of a task.
 		feedAppLog(getTaskId(), pvTaskParam->computeSize*4, logString);
 
-//		getTimeLoadLineIntArrayRange(u32AppArray, pvTaskParam->computeSize);	// Line read function.
 		usDelay(pvTaskParam->computationTimeUs);
 
-
-//		executionTime = executionTime - GET_GTIMER_LOWER;
-//		xil_printf("T%d: %d ns\r\n", getTaskId(), executionTime);
+//		executionTime = GET_GTIMER_LOWER - executionTime;
+//		xil_printf("T%d: %d ns\r\n", getTaskId(), executionTime*3);
 //		taskEXIT_CRITICAL();
 
 		vTaskDelayUntil( &xLastWakeTime, pvTaskParam->periodUs/1000/portTICK_RATE_MS );
@@ -193,7 +198,7 @@ void prvGeneralSyntheticTask(void *pvParameters)
 ////	}
 ////}
 
-#define COUNTS_PER_USECOND  (XPAR_CPU_CORTEXA9_CORE_CLOCK_FREQ_HZ / (2*1000000))
+#define COUNTS_PER_USECOND  (XPAR_CPU_CORTEXA9_CORE_CLOCK_FREQ_HZ / (2*1000000))*10
 void usDelay(u32 usSeconds)
 {
 	u32 loop;
