@@ -2122,7 +2122,8 @@ void vTaskSwitchContext( void )
 	else
 	{
 		// 2015 2/194/2 CY:
-		//#include "TimingAttack_Demo/LogUtility/SchedulerLogUtility.h"
+		#include "MyProgram/LogUtility/SchedulerLogUtility.h"
+		//feedSchedulerLog((u32)(pxCurrentTCB->uxTCBNumber), "OUT");
 
 		xYieldPending = pdFALSE;
 		traceTASK_SWITCHED_OUT();
@@ -2164,7 +2165,7 @@ void vTaskSwitchContext( void )
 
 		// 2015 4/2 CY:
 		//xil_printf("Scheduler feed\r\n");
-		//feedSchedulerLog((u32)(pxCurrentTCB->uxTCBNumber), "IN");
+		feedSchedulerLog((u32)(pxCurrentTCB->uxTCBNumber), "IN");
 
 		traceTASK_SWITCHED_IN();
 
