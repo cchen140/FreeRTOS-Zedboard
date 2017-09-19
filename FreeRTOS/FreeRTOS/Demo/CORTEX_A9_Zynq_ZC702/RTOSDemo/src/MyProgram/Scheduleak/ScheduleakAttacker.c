@@ -5,6 +5,8 @@
  *      Author: cy
  */
 
+#include <stdlib.h>
+
 #include "ScheduleakAttacker.h"
 #include "../LogUtility/AttackerLogUtility.h"
 #include "../LogUtility/AppLogUtility.h"
@@ -34,7 +36,7 @@ CapturedExecIntervals capturedExecIntervals;
 void prvObserverTask( void *pvParameters )
 {
 	// Initialize attacker's inference base.
-	initInferenceBase(appTaskParamArray[0].periodUs*333);
+	initInferenceBase(appTaskParamArray[VICTIM_TASK_ID_OFFSET].periodUs*333);
 	initCapturedExecIntervals();
 
 	// Initialize the xLastWakeTime variable with the current time.
@@ -202,4 +204,76 @@ double computeInferencePrecisionRatio(u32 victimPeriod, u32 groundTruth, u32 inf
 	precisionRatio = 1 - ((double)error/(double)(victimPeriod/2));
 
 	return precisionRatio;
+}
+
+
+/*
+ * The source code of this function is from the following link:
+ * http://www.math.wustl.edu/~victor/mfmm/compaa/gcd.c
+ */
+int gcd ( int a, int b )
+{
+  int c;
+  while ( a != 0 ) {
+     c = a; a = b%a;  b = c;
+  }
+  return b;
+}
+
+// https://stackoverflow.com/questions/4229870/c-algorithm-to-calculate-least-common-multiple-for-multiple-numbers
+int lcm(int a, int b)
+{
+    int temp = gcd(a, b);
+
+    return temp ? (a / temp * b) : 0;
+}
+
+extern u32 firstGtTimeCount;	// From SyntheticTasks.c
+void computeAndPrintInferenceResult(void) {
+
+	/* GCD(p_o,p_v) */
+	u32 u32VictimPeriodUs = appTaskParamArray[VICTIM_TASK_ID_OFFSET].periodUs;
+	u32 gcdPoPvUs = gcd(OBSERVER_TASK_PERIOD_US, u32VictimPeriodUs);
+	u32 lcmPoPvUs = lcm(OBSERVER_TASK_PERIOD_US, u32VictimPeriodUs);
+	xil_printf("\r\nGCD(po,pv) = %d\r\n", gcdPoPvUs);
+	xil_printf("LCM(po,pv) = %d\r\n", lcmPoPvUs);
+
+	/* Compute observation duration. */
+	u32 lastTimeStamp = capturedExecIntervals.intervals[capturedExecIntervals.count-1].end;
+	double observationDurationInLcmPoPv = (double)(lastTimeStamp-firstGtTimeCount)/(double)(lcmPoPvUs*333);
+
+	char observationDurationString[20];
+	gcvt(observationDurationInLcmPoPv,10,observationDurationString);
+	xil_printf("Observation Duration in LCM(po,pv) = %s\r\n", observationDurationString);
+
+	u32 i;
+	Interval *thisInterval;
+	Boolean dataInvalid = False;
+	for (i=0; i<capturedExecIntervals.count; i++) {
+		thisInterval = &(capturedExecIntervals.intervals[i]);
+		applyObserverTaskExecInterval(thisInterval->begin, thisInterval->end);
+
+		if (thisInterval->begin < firstGtTimeCount) {
+			dataInvalid = True;
+		}
+	}
+	u32 inferenceResult = getArrivalTimeInference()*3;
+
+	if (dataInvalid == True) {
+		xil_printf("\r\nInvalid data!!\r\n");
+	}
+
+	xil_printf("\r\nInference Result = %d \r\n", inferenceResult);
+
+
+	/* Compute precision ratio. */
+	u32 victimPeriod = inferenceBase.baseEnd*1000;
+	u32 initialArrival = (firstGtTimeCount%victimPeriod)*3;
+
+	double precisionRatio = computeInferencePrecisionRatio(victimPeriod, initialArrival, inferenceResult);
+
+	char output[20];
+	gcvt(precisionRatio,10,output);
+
+	xil_printf("PrecisionRatio = %s\r\n", output);
 }

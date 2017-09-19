@@ -64,9 +64,6 @@ void main_myProgram( void )
 
 }
 
-extern CapturedExecIntervals capturedExecIntervals;
-extern IntermittentInterval inferenceBase;
-extern u32 firstGtTimeCount;
 void prvExperimentControlTask( void *pvParameters )
 {
 	TickType_t xLastWakeTime;
@@ -78,28 +75,8 @@ void prvExperimentControlTask( void *pvParameters )
 
 		taskENTER_CRITICAL();
 
-		u32 i;
-		Interval *thisInterval;
-		for (i=0; i<capturedExecIntervals.count; i++) {
-			thisInterval = &(capturedExecIntervals.intervals[i]);
-			applyObserverTaskExecInterval(thisInterval->begin, thisInterval->end);
-		}
-		u32 inferenceResult = getArrivalTimeInference()*3;
 
-		xil_printf("\r\nInference Result = %d \r\n", inferenceResult);
-
-
-		/* Compute precision ratio. */
-		u32 victimPeriod = inferenceBase.baseEnd*1000;
-		u32 initialArrival = (firstGtTimeCount%victimPeriod)*3;
-
-		double precisionRatio = computeInferencePrecisionRatio(victimPeriod, initialArrival, inferenceResult);
-
-		char output[50];
-		gcvt(precisionRatio,10,output);
-
-		xil_printf("PrecisionRatio = %s\r\n", output);
-
+		computeAndPrintInferenceResult();
 
 
 		outputTaskList();
@@ -124,4 +101,5 @@ void prvExperimentControlTask( void *pvParameters )
 		}
 	}
 }
+
 

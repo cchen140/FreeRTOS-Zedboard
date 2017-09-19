@@ -30,8 +30,8 @@ void InterInterval_getLargestComplementaryInterval(IntermittentInterval *interIn
 	Interval *thisInterval = interInterval->firstInterval;
 	while (thisInterval != thisInterval->nextInterval) {
 		u32 thisCompIntervalLength = thisInterval->nextInterval->begin - thisInterval->end;
-		if ( thisInterval->nextInterval > largestLength ) {
-			largestLength = thisInterval->nextInterval;
+		if ( thisCompIntervalLength > largestLength ) {
+			largestLength = thisCompIntervalLength;
 			initInterval( largestInterval, thisInterval->end, thisInterval->nextInterval->begin );
 		}
 
