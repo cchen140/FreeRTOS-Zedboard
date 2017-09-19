@@ -93,7 +93,7 @@ void InterInterval_updateUnion(IntermittentInterval *interInterval, Interval *in
 		// Then check if it is overlapped with its consecutive intervals.
 		while ( (intersectedInterval->nextInterval!=intersectedInterval) && (isIntersected(intersectedInterval, intersectedInterval->nextInterval)==TRUE) ) {
 			updateIntervalByUnion( intersectedInterval, intersectedInterval->nextInterval);
-			InterInterval_removeInterval(intersectedInterval, intersectedInterval->nextInterval);
+			InterInterval_removeInterval(interInterval, intersectedInterval->nextInterval);
 		}
 	}
 }
