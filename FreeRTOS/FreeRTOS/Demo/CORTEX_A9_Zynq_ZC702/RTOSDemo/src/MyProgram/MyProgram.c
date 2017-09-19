@@ -90,10 +90,11 @@ void prvExperimentControlTask( void *pvParameters )
 
 
 		/* Compute precision ratio. */
-		u32 victimPeriod = inferenceBase.baseEnd;
+		u32 victimPeriod = inferenceBase.baseEnd*1000;
 		u32 initialArrival = (firstGtTimeCount%victimPeriod)*3;
 
-		double precisionRatio = 1- ((inferenceResult-initialArrival)/(double)(victimPeriod/2));
+		double precisionRatio = computeInferencePrecisionRatio(victimPeriod, initialArrival, inferenceResult);
+
 		char output[50];
 		gcvt(precisionRatio,10,output);
 

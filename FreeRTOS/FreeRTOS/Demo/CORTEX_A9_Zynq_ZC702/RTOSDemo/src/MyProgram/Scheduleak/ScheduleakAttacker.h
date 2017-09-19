@@ -18,6 +18,7 @@ void createAttackerTasks(void);
 
 void applyObserverTaskExecInterval(u32 u32ExecIntervalBeginTime, u32 u32ExecIntervalEndTime);
 u32 getArrivalTimeInference(void);
+double computeInferencePrecisionRatio(u32 victimPeriod, u32 groundTruth, u32 inference);
 
 
 #endif // SCHEDULEAK_H_

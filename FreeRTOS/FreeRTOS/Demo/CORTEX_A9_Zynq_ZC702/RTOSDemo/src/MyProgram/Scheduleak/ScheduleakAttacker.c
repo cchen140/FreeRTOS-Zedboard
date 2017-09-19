@@ -189,3 +189,17 @@ void addAnExecInterval(u32 begin, u32 end) {
 		capturedExecIntervals.count ++;
 	}
 }
+
+double computeInferencePrecisionRatio(u32 victimPeriod, u32 groundTruth, u32 inference) {
+
+	u32 error = abs(groundTruth - inference);
+	double precisionRatio;
+
+	if (error > (victimPeriod/2)) {
+		error = victimPeriod-error;
+	}
+
+	precisionRatio = 1 - ((double)error/(double)(victimPeriod/2));
+
+	return precisionRatio;
+}
