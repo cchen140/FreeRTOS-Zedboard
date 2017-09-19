@@ -19,12 +19,12 @@ void initInferenceBase(u32 u32InVictimPeriod);
 //void applyObserverTaskExecInterval(u32 u32ExecIntervalBeginTime, u32 u32ExecIntervalEndTime);
 //u32 getArrivalTimeInference(void);
 void initCapturedExecIntervals(void);
-void addAnExecInterval(u32 begin, u32 end);
+void addAnExecInterval(XTime begin, XTime end);
 
 void createAttackerTasks(void) {
 	xTaskCreate( prvObserverTask,			/* The function that implements the task. */
 					"ObserverTask", 			/* The text name assigned to the task - for debug only as it is not used by the kernel. */
-					1000, 				/* The size of the stack to allocate to the task. */
+					20000, 				/* The size of the stack to allocate to the task. */
 					NULL, 				/* The parameter passed to the task - not used in this case. */
 					tskIDLE_PRIORITY+1, 	/* The priority assigned to the task. */
 					NULL );
@@ -54,13 +54,13 @@ void prvObserverTask( void *pvParameters )
 	}
 
 
-	u32 u32ObserveBeginTime;
-	u32 u32ObserveEndTime;
+	XTime u32ObserveBeginTime;
+	XTime u32ObserveEndTime;
 	//u32 u32TempLowHackerTimer;
-	u32 u32ObserveTimeDiff;
+	XTime u32ObserveTimeDiff;
 
-	u32 u32CurrentExecIntervalBeginTime;
-	u32 u32CurrentExecIntervalEndTime;
+	XTime u32CurrentExecIntervalBeginTime;
+	XTime u32CurrentExecIntervalEndTime;
 
 	//u32 u32HackerQueueData = 0;
 
@@ -68,17 +68,19 @@ void prvObserverTask( void *pvParameters )
 	while (1) {
 		feedAppLog(getTaskId(), 0, "BEGIN");
 
-
-		u32ObserveBeginTime = GET_GTIMER_LOWER;
+		XTime_GetTime(&u32ObserveBeginTime);
+		//u32ObserveBeginTime = GET_GTIMER_LOWER;
 		u32CurrentExecIntervalBeginTime = u32ObserveBeginTime;
 
 		int i;
 		for (i=0; i<100000; i++) {	//100000 = 5.7ms
-			u32ObserveEndTime = GET_GTIMER_LOWER;
+			XTime_GetTime(&u32ObserveEndTime);
+			//u32ObserveEndTime = GET_GTIMER_LOWER;
 
 			if (u32ObserveEndTime >= u32ObserveBeginTime){
 				u32ObserveTimeDiff = u32ObserveEndTime - u32ObserveBeginTime;
 			} else {
+				// It should never happen when XTime is used.
 				u32ObserveTimeDiff = ((u32)(-1)) - u32ObserveBeginTime + u32ObserveEndTime;
 			}
 
@@ -143,13 +145,13 @@ void initInferenceBase(u32 u32InVictimPeriod) {
 }
 
 // cost: 1500ns ~ 2000ns
-void applyObserverTaskExecInterval(u32 u32ExecIntervalBeginTime, u32 u32ExecIntervalEndTime) {
+void applyObserverTaskExecInterval(XTime u32ExecIntervalBeginTime, XTime u32ExecIntervalEndTime) {
 	// update the intervals
 	Interval thisInterval;
 	initInterval( &thisInterval, u32ExecIntervalBeginTime, u32ExecIntervalEndTime );
 
 	//TODO: Check if shifting is correct here.
-	shiftInterval( &thisInterval, -(u32)((u32)u32ExecIntervalBeginTime/(u32)u32VictimPeriod)*(u32)u32VictimPeriod );
+	shiftInterval( &thisInterval, -(u64)((u64)u32ExecIntervalBeginTime/(u64)u32VictimPeriod)*(u64)u32VictimPeriod );
 
 	Interval wholeBaseInterval;
 	initInterval(&wholeBaseInterval, 0, u32VictimPeriod);
@@ -181,7 +183,7 @@ void initCapturedExecIntervals(void) {
 	capturedExecIntervals.count = 0;
 }
 
-void addAnExecInterval(u32 begin, u32 end) {
+void addAnExecInterval(u64 begin, u64 end) {
 	Interval *newInterval;
 	newInterval = &(capturedExecIntervals.intervals[capturedExecIntervals.count]);
 	initInterval(newInterval, begin, end);
@@ -189,10 +191,13 @@ void addAnExecInterval(u32 begin, u32 end) {
 	// If the buffer is full, then don't add the counter (next time it will override the latest one).
 	if (capturedExecIntervals.count+1 < MAX_CAPTURED_EXEC_INTERVAL_LIST_SIZE) {
 		capturedExecIntervals.count ++;
+	} else {
+		//TODO: When it occurs you may want to increase MAX_CAPTURED_EXEC_INTERVAL_LIST_SIZE.
+		capturedExecIntervals.count = capturedExecIntervals.count;
 	}
 }
 
-double computeInferencePrecisionRatio(u32 victimPeriod, u32 groundTruth, u32 inference) {
+double computeInferencePrecisionRatio(u32 victimPeriod, XTime groundTruth, XTime inference) {
 
 	u32 error = abs(groundTruth - inference);
 	double precisionRatio;
@@ -228,7 +233,7 @@ int lcm(int a, int b)
     return temp ? (a / temp * b) : 0;
 }
 
-extern u32 firstGtTimeCount;	// From SyntheticTasks.c
+extern XTime firstGtTimeCount;	// From SyntheticTasks.c
 void computeAndPrintInferenceResult(void) {
 
 	/* GCD(p_o,p_v) */
@@ -239,8 +244,9 @@ void computeAndPrintInferenceResult(void) {
 	xil_printf("LCM(po,pv) = %d\r\n", lcmPoPvUs);
 
 	/* Compute observation duration. */
-	u32 lastTimeStamp = capturedExecIntervals.intervals[capturedExecIntervals.count-1].end;
+	XTime lastTimeStamp = capturedExecIntervals.intervals[capturedExecIntervals.count-1].end;
 	double observationDurationInLcmPoPv = (double)(lastTimeStamp-firstGtTimeCount)/(double)(lcmPoPvUs*333);
+	//double observationDurationInLcmPoPv = (double)((lastTimeStamp-firstGtTimeCount)/(lcmPoPvUs*333));
 
 	char observationDurationString[20];
 	gcvt(observationDurationInLcmPoPv,10,observationDurationString);

@@ -12,8 +12,8 @@
 #include "../GeneralTypeDef.h"
 
 typedef struct Interval {
-	u32 begin;
-	u32 end;
+	u64 begin;
+	u64 end;
 	int length;
 
 	/* These two pointers are used when intervals are employed with linked-list. */
@@ -23,10 +23,10 @@ typedef struct Interval {
 	Boolean used;
 } Interval;
 
-void initInterval( Interval *interval, u32 begin, u32 end );
+void initInterval( Interval *interval, u64 begin, u64 end );
 Boolean getIntersection( Interval *intervalA, Interval *intervalB, Interval *resultInterval );
 void shiftInterval( Interval *inInterval, int inOffset );
-Boolean contains( Interval *inInterval, u32 inPoint );
+Boolean contains( Interval *inInterval, u64 inPoint );
 Boolean isIntersected( Interval *intervalA, Interval *intervalB );
 void updateIntervalByUnion( Interval *intervalHost, Interval *intervalGuest);
 

@@ -69,7 +69,7 @@ void createSyntheticTasks(void)
 
 // Note that the arrays all the tasks read in this function are the same one.
 TickType_t firstTickCount = 0;
-u32 firstGtTimeCount = 0;
+XTime firstGtTimeCount = 0;
 void prvGeneralSyntheticTask(void *pvParameters)
 {
 	TaskParam *pvTaskParam = pvParameters;
@@ -87,7 +87,8 @@ void prvGeneralSyntheticTask(void *pvParameters)
 	if (firstTickCount == 0)
 	{
 		firstTickCount = xLastWakeTime;
-		firstGtTimeCount = GET_GTIMER_LOWER;
+		XTime_GetTime(&firstGtTimeCount);
+		//firstGtTimeCount = GET_GTIMER_LOWER;
 	}
 	else
 	{

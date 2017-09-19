@@ -7,7 +7,7 @@
 
 #include "Interval.h"
 
-void initInterval( Interval *interval, u32 begin, u32 end )
+void initInterval( Interval *interval, u64 begin, u64 end )
 {
 	interval->begin = begin;
 	interval->end = end;
@@ -73,7 +73,7 @@ void shiftInterval( Interval *inInterval, int inOffset )
     inInterval->end += inOffset;
 }
 
-Boolean contains( Interval *inInterval, u32 inPoint )
+Boolean contains( Interval *inInterval, u64 inPoint )
 {
 	if ( (inInterval->begin <= inPoint)
 		&& (inInterval->end >= inPoint) )
