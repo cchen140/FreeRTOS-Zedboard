@@ -5,7 +5,7 @@
 #include "xtime_l.h"
 
 #define	OBSERVER_TASK_PERIOD_US	49000
-#define	MAX_CAPTURED_EXEC_INTERVAL_LIST_SIZE	5000
+#define	MAX_CAPTURED_EXEC_INTERVAL_LIST_SIZE	2000
 #define VICTIM_TASK_ID_OFFSET	0
 
 // The macro for getting lower 32-bit value from the global timer.

@@ -14,7 +14,7 @@
 typedef struct Interval {
 	u64 begin;
 	u64 end;
-	int length;
+	signed long long length;
 
 	/* These two pointers are used when intervals are employed with linked-list. */
 	struct Interval *prevInterval;

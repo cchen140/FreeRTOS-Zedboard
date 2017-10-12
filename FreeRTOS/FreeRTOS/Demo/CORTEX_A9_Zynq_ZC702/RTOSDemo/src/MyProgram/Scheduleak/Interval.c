@@ -17,6 +17,11 @@ void initInterval( Interval *interval, u64 begin, u64 end )
 	interval->prevInterval = interval;
 
 	interval->used = TRUE;
+
+	if (interval->length < 0 ) {
+		int i = 0;
+		i++;
+	}
 }
 
 /**
@@ -26,7 +31,7 @@ void initInterval( Interval *interval, u64 begin, u64 end )
 Boolean getIntersection( Interval *intervalA, Interval *intervalB, Interval *resultInterval )
 {
 	Interval *leftInterval, *rightInterval;
-	u32 resultBegin=0, resultEnd=0;
+	u64 resultBegin=0, resultEnd=0;
 
     // Check which one is on the left.
 	if ( intervalA->begin <= intervalB->begin )
@@ -67,10 +72,21 @@ Boolean getIntersection( Interval *intervalA, Interval *intervalB, Interval *res
 	return TRUE;
 }
 
+/* This function will discard the interval that is below 0. */
 void shiftInterval( Interval *inInterval, int inOffset )
 {
     inInterval->begin += inOffset;
     inInterval->end += inOffset;
+
+    if ((signed long long)inInterval->begin < 0) {
+    	inInterval->begin = 0;
+    }
+
+    if ((signed long long)inInterval->end < 0) {
+		inInterval->end = 0;
+	}
+
+    inInterval->length = inInterval->end - inInterval->begin;
 }
 
 Boolean contains( Interval *inInterval, u64 inPoint )

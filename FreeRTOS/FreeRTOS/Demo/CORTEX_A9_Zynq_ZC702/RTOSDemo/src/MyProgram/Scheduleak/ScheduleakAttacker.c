@@ -24,7 +24,7 @@ void addAnExecInterval(XTime begin, XTime end);
 void createAttackerTasks(void) {
 	xTaskCreate( prvObserverTask,			/* The function that implements the task. */
 					"ObserverTask", 			/* The text name assigned to the task - for debug only as it is not used by the kernel. */
-					20000, 				/* The size of the stack to allocate to the task. */
+					5000, 				/* The size of the stack to allocate to the task. */
 					NULL, 				/* The parameter passed to the task - not used in this case. */
 					tskIDLE_PRIORITY+1, 	/* The priority assigned to the task. */
 					NULL );
@@ -32,6 +32,7 @@ void createAttackerTasks(void) {
 
 extern TickType_t firstTickCount;
 extern TaskParam appTaskParamArray[];	// from SyntheticTasks.c
+extern XTime firstGtTimeCount;	// From SyntheticTasks.c
 CapturedExecIntervals capturedExecIntervals;
 void prvObserverTask( void *pvParameters )
 {
@@ -44,8 +45,9 @@ void prvObserverTask( void *pvParameters )
 
 	xLastWakeTime = xTaskGetTickCount();
 	// To align the start point of every application task.
-	if (firstTickCount == 0)
+	if (firstGtTimeCount == 0)
 	{
+		XTime_GetTime(&firstGtTimeCount);
 		firstTickCount = xLastWakeTime;
 	}
 	else
@@ -159,13 +161,27 @@ void applyObserverTaskExecInterval(XTime u32ExecIntervalBeginTime, XTime u32Exec
 	// first period part.
 	Interval intervalFirstPeriodPart;
 	getIntersection( &wholeBaseInterval, &thisInterval, &intervalFirstPeriodPart );
+	/* Debug */
+	if (contains(&intervalFirstPeriodPart, firstGtTimeCount%u32VictimPeriod)) {
+		int x=0;
+		x++;
+	}
+	/* Debug End */
 	InterInterval_updateUnion( &inferenceBase, &intervalFirstPeriodPart);
 
 	// second period part.
 	Interval intervalSecondPeriodPart;
 	shiftInterval( &thisInterval, -u32VictimPeriod );
-	if ( getIntersection( &wholeBaseInterval, &thisInterval, &intervalSecondPeriodPart ) == TRUE ) {
-		InterInterval_updateUnion( &inferenceBase, &intervalSecondPeriodPart);
+	if (thisInterval.length > 0) {
+		if ( getIntersection( &wholeBaseInterval, &thisInterval, &intervalSecondPeriodPart ) == TRUE ) {
+			/* Debug */
+			if (contains(&intervalSecondPeriodPart, firstGtTimeCount%u32VictimPeriod)) {
+				int x=0;
+				x++;
+			}
+			/* Debug End */
+			InterInterval_updateUnion( &inferenceBase, &intervalSecondPeriodPart);
+		}
 	}
 
 }
@@ -173,7 +189,7 @@ void applyObserverTaskExecInterval(XTime u32ExecIntervalBeginTime, XTime u32Exec
 
 // cost: 1300 ns
 u32 getArrivalTimeInference(void) {
-	// Get complementary intervals, for each interval find the largest one and return the begin time.
+	// Get complementary intervals, find the largest interval and return the begin time.
 	Interval largestComplInterval;
 	InterInterval_getLargestComplementaryInterval(&inferenceBase, &largestComplInterval, TRUE);
 	return largestComplInterval.begin;
@@ -193,7 +209,8 @@ void addAnExecInterval(u64 begin, u64 end) {
 		capturedExecIntervals.count ++;
 	} else {
 		//TODO: When it occurs you may want to increase MAX_CAPTURED_EXEC_INTERVAL_LIST_SIZE.
-		capturedExecIntervals.count = capturedExecIntervals.count;
+		//capturedExecIntervals.count = capturedExecIntervals.count;
+		while (1) ;
 	}
 }
 
@@ -233,15 +250,14 @@ int lcm(int a, int b)
     return temp ? (a / temp * b) : 0;
 }
 
-extern XTime firstGtTimeCount;	// From SyntheticTasks.c
 void computeAndPrintInferenceResult(void) {
 
 	/* GCD(p_o,p_v) */
 	u32 u32VictimPeriodUs = appTaskParamArray[VICTIM_TASK_ID_OFFSET].periodUs;
 	u32 gcdPoPvUs = gcd(OBSERVER_TASK_PERIOD_US, u32VictimPeriodUs);
 	u32 lcmPoPvUs = lcm(OBSERVER_TASK_PERIOD_US, u32VictimPeriodUs);
-	xil_printf("\r\nGCD(po,pv) = %d\r\n", gcdPoPvUs);
-	xil_printf("LCM(po,pv) = %d\r\n", lcmPoPvUs);
+	xil_printf("\r\nGCD(po,pv) = %d us\r\n", gcdPoPvUs);
+	xil_printf("LCM(po,pv) = %d us\r\n", lcmPoPvUs);
 
 	/* Compute observation duration. */
 	XTime lastTimeStamp = capturedExecIntervals.intervals[capturedExecIntervals.count-1].end;
@@ -263,18 +279,18 @@ void computeAndPrintInferenceResult(void) {
 			dataInvalid = True;
 		}
 	}
-	u32 inferenceResult = getArrivalTimeInference()*3;
+	u32 inferenceResult = getArrivalTimeInference();
 
 	if (dataInvalid == True) {
 		xil_printf("\r\nInvalid data!!\r\n");
 	}
 
-	xil_printf("\r\nInference Result = %d \r\n", inferenceResult);
+	xil_printf("\r\nInference Result = %d ns \r\n", inferenceResult*3);
 
 
 	/* Compute precision ratio. */
-	u32 victimPeriod = inferenceBase.baseEnd*1000;
-	u32 initialArrival = (firstGtTimeCount%victimPeriod)*3;
+	u32 victimPeriod = inferenceBase.baseEnd;
+	u32 initialArrival = firstGtTimeCount%victimPeriod;
 
 	double precisionRatio = computeInferencePrecisionRatio(victimPeriod, initialArrival, inferenceResult);
 
@@ -282,4 +298,8 @@ void computeAndPrintInferenceResult(void) {
 	gcvt(precisionRatio,10,output);
 
 	xil_printf("PrecisionRatio = %s\r\n", output);
+
+	/* Print captured intervals (not inference intervals). */
+	InterInterval_outputIntervals(&inferenceBase);
+
 }

@@ -19,8 +19,8 @@ typedef struct IntermittentInterval {
 
 	u32 count;
 
-	u32 baseBegin;
-	u32 baseEnd;
+	u64 baseBegin;
+	u64 baseEnd;
 } IntermittentInterval;
 
 void initInterInterval(IntermittentInterval *interInterval, u32 baseBegin, u32 baseEnd);
@@ -29,5 +29,6 @@ void InterInterval_updateUnion(IntermittentInterval *interInterval, Interval *in
 void InterInterval_addIntervalWithoutCheckingOverlaps(IntermittentInterval *interInterval, Interval *interval);
 void InterInterval_removeInterval(IntermittentInterval *interInterval, Interval *intervalToBeRemoved);
 Interval *InterInterval_getAnEmptyIntervalSpace(IntermittentInterval *interInterval);
+void InterInterval_outputIntervals(IntermittentInterval *interInterval);
 
 #endif /* INTERMITTENTINTERVAL_H_ */

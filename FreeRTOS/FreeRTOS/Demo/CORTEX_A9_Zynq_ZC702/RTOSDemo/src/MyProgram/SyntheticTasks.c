@@ -12,8 +12,8 @@ u32 u32AesArray[SIZE_OF_APP_ARRAY];
 TaskParam appTaskParamArray[] = {
 	//  period (us), priority, computation time (us), computing size
 		{32000, APP_TASK_LOWEST_PRIORITY, 9600, 0},
-		{20000, APP_TASK_LOWEST_PRIORITY+1, 4300, 0},
-		{10000, APP_TASK_LOWEST_PRIORITY+2, 1900, 0}
+//		{20000, APP_TASK_LOWEST_PRIORITY+1, 4300, 0},
+//		{10000, APP_TASK_LOWEST_PRIORITY+2, 1900, 0}
 //		,
 //		{20000, APP_TASK_LOWEST_PRIORITY+3, 100, 0},
 //		{18000, APP_TASK_LOWEST_PRIORITY+4, 100, 0},
@@ -84,11 +84,13 @@ void prvGeneralSyntheticTask(void *pvParameters)
 	xLastWakeTime = xTaskGetTickCount();
 
 	// To align the start point of every application task.
-	if (firstTickCount == 0)
+	if (firstGtTimeCount == 0)
 	{
 		firstTickCount = xLastWakeTime;
 		XTime_GetTime(&firstGtTimeCount);
 		//firstGtTimeCount = GET_GTIMER_LOWER;
+		u32 low_gtime = GET_GTIMER_LOWER;
+		xil_printf("\r\nGET_GTIMER_LOWER = %d\r\n", low_gtime*3);
 	}
 	else
 	{
@@ -99,7 +101,7 @@ void prvGeneralSyntheticTask(void *pvParameters)
 	//u32 presentGtTime = GET_GTIMER_LOWER;
 	u32 thisPeriod = pvTaskParam->periodUs*333;
 	u32 initialArrival = firstGtTimeCount%thisPeriod;
-	xil_printf("\r\nTask-%d:\t%d\r\n", getTaskId(), initialArrival*3);
+	xil_printf("\r\nTask-%d:\t%d ns\r\n", getTaskId(), initialArrival*3);
 
 	while (TRUE)
 	{
