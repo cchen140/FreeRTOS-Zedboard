@@ -299,6 +299,8 @@ void computeAndPrintInferenceResult(void) {
 
 	xil_printf("PrecisionRatio = %s\r\n", output);
 
+	xil_printf("Victim Period = %d\r\n", victimPeriod*3);
+
 	/* Print captured intervals (not inference intervals). */
 	InterInterval_outputIntervals(&inferenceBase);
 

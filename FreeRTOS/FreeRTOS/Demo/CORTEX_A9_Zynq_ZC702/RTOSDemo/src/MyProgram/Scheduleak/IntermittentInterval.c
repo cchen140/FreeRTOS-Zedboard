@@ -15,62 +15,6 @@ void initInterInterval(IntermittentInterval *interInterval, u32 baseBegin, u32 b
 }
 
 void InterInterval_getLargestComplementaryInterval(IntermittentInterval *interInterval, Interval *largestInterval, Boolean checkCrossIntervals) {
-
-	largestInterval->length = 0;
-
-	u64 intervalLengthFromZero = 0;
-
-	u64 timePointer = 0;
-	Interval *closestInterval;
-	closestInterval = interInterval->firstInterval;
-
-	while (1) {
-		Interval *thisInterval;
-		thisInterval = interInterval->firstInterval;
-		while (1) {
-
-			if (thisInterval->begin >= timePointer) {
-				if (thisInterval->begin < closestInterval->begin) {
-					closestInterval = thisInterval;
-				}
-			}
-
-			if (thisInterval->nextInterval != thisInterval) {
-				thisInterval = thisInterval->nextInterval;
-			} else {
-				break;
-			}
-		}
-
-		if (closestInterval->begin > timePointer) {
-			if ((closestInterval->begin-timePointer) > largestInterval->length) {
-				initInterval( largestInterval, timePointer, closestInterval->begin);
-
-				/* This is for cross intervals at the edges. */
-				if (timePointer == 0) {
-					intervalLengthFromZero = largestInterval->length;
-				}
-			}
-		}
-
-		if (closestInterval->begin >= timePointer) {
-			// This condition covers timePoint == 0.
-			timePointer = closestInterval->end;
-		} else {
-			// No later interval, so this is the last interval.
-			if (timePointer < interInterval->baseEnd) {
-				if ( (interInterval->baseEnd-timePointer+intervalLengthFromZero) > largestInterval->length ) {
-					// The cross interval at the edges is the largest one.
-					initInterval( largestInterval, timePointer, interInterval->baseEnd+intervalLengthFromZero );
-				}
-			}
-			break;
-		}
-	}
-
-	return;
-
-	/* This following code is to be removed as they assume the interInterval is sorted. */
 	// We assume intervals are sorted already, so start from the first interval in the list.
 
 	u32 largestLength = 0;
