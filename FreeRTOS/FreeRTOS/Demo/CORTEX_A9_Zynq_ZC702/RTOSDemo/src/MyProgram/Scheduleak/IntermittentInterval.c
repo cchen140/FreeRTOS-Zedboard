@@ -159,15 +159,14 @@ void InterInterval_addIntervalWithoutCheckingOverlaps(IntermittentInterval *inte
 	Interval *newInterval;
 
 	if (interInterval->count == 0) {
-		interInterval->firstInterval = &(interInterval->intervals[0]);
-		interInterval->lastInterval = &(interInterval->intervals[0]);
-
-		interInterval->intervals[0].nextInterval = &(interInterval->intervals[0]);
-		interInterval->intervals[0].prevInterval = &(interInterval->intervals[0]);
-
 		newInterval = &(interInterval->intervals[0]);
 		initInterval( newInterval, interval->begin, interval->end );
 
+		interInterval->firstInterval = newInterval;
+		interInterval->lastInterval = newInterval;
+
+		newInterval->nextInterval = newInterval;
+		newInterval->prevInterval = newInterval;
 	} else {
 		newInterval = InterInterval_getAnEmptyIntervalSpace(interInterval);
 		initInterval( newInterval, interval->begin, interval->end );
@@ -175,7 +174,7 @@ void InterInterval_addIntervalWithoutCheckingOverlaps(IntermittentInterval *inte
 		// Find the interval where new interval should be inserted before.
 		Interval *thisInterval;
 		thisInterval = interInterval->firstInterval;
-		while ( newInterval->begin < thisInterval->end ) {
+		while ( newInterval->begin > thisInterval->begin ) {
 			if (thisInterval->nextInterval == thisInterval) {
 				break;
 			} else {
@@ -183,35 +182,42 @@ void InterInterval_addIntervalWithoutCheckingOverlaps(IntermittentInterval *inte
 			}
 		}
 
-		if (newInterval->begin < thisInterval->end) {
-			// New interval will be the first element then.
-			thisInterval->prevInterval = newInterval;
+
+		if ( (thisInterval->nextInterval == thisInterval) && (newInterval->begin > thisInterval->begin) ) { // Check if newInterval is to be added to the last slot.
+			// thisInterval is the last element.
+			// newInterval should be after thisInterval
+			// Insert into the last.
+
+			newInterval->nextInterval = newInterval;
+			newInterval->prevInterval = thisInterval;
+
+			interInterval->lastInterval = newInterval;
+			thisInterval->nextInterval = newInterval;
+		} else if (thisInterval->prevInterval == thisInterval) {	// Check if thisInterval is the first element.
+			// thisInterval is the first element.
+			// New Interval should be before thisInterval.
+			interInterval->firstInterval = newInterval;
+
 			newInterval->nextInterval = thisInterval;
 			newInterval->prevInterval = newInterval;
-			interInterval->firstInterval = newInterval;
+
+			//thisInterval->nextInterval = // no change on this one
+			thisInterval->prevInterval = newInterval;
 		} else {
-			// New interval will be after thisInterval.
+			// Again, new Interval should be before thisInterval.
+			newInterval->nextInterval = thisInterval;
+			newInterval->prevInterval = thisInterval->prevInterval;
 
-			// Check if thisInterval is the last element.
-			if (thisInterval->nextInterval == thisInterval) {
-				// Yes it is.
-				newInterval->nextInterval = newInterval;
-				interInterval->lastInterval = newInterval;
+			//thisInterval->nextInterval = // no change on this one
+			thisInterval->prevInterval = newInterval;
 
-				thisInterval->nextInterval = newInterval;
-				newInterval->prevInterval = thisInterval;
-			} else {
-				newInterval->nextInterval = thisInterval->nextInterval;
-				newInterval->nextInterval->prevInterval = newInterval;
-
-				thisInterval->nextInterval = newInterval;
-				newInterval->prevInterval = thisInterval;
-			}
-
+			newInterval->prevInterval->nextInterval = newInterval;
 		}
 
 	}
 
+
+	//newInterval->used = TRUE; // No need to do that since it's done in initInterval().
 	interInterval->count++;
 
 }
@@ -252,6 +258,7 @@ Interval *InterInterval_getAnEmptyIntervalSpace(IntermittentInterval *interInter
 
 void InterInterval_outputIntervals(IntermittentInterval *interInterval) {
 	xil_printf("\r\nCaptured Intervals (ns)(count=%d):\r\n", interInterval->count);
+	/*
 	u32 i;
 	for (i=0; i<MAX_INTERVAL_LIST_SIZE; i++) {
 		if (interInterval->intervals[i].used == TRUE) {
@@ -260,4 +267,18 @@ void InterInterval_outputIntervals(IntermittentInterval *interInterval) {
 			xil_printf("[%d - %d]\r\n", begin*3, end*3);
 		}
 	}
+	*/
+	// Print in order
+	Interval *thisInterval;
+	Boolean firstLoop = TRUE;
+	do {
+		if (firstLoop == TRUE) {
+			firstLoop = FALSE;
+			thisInterval = interInterval->firstInterval;
+		} else {
+			thisInterval = thisInterval->nextInterval;
+		}
+
+		xil_printf("[%d - %d]\r\n", (u32)(thisInterval->begin*3), (u32)(thisInterval->end*3));
+	} while (thisInterval->nextInterval != thisInterval);
 }

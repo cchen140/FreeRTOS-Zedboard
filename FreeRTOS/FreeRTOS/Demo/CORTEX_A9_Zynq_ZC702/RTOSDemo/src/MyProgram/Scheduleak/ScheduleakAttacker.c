@@ -37,7 +37,7 @@ CapturedExecIntervals capturedExecIntervals;
 void prvObserverTask( void *pvParameters )
 {
 	// Initialize attacker's inference base.
-	initInferenceBase(appTaskParamArray[VICTIM_TASK_ID_OFFSET].periodUs*333);
+	initInferenceBase(appTaskParamArray[VICTIM_TASK_ID_OFFSET].periodUs*333.333333);
 	initCapturedExecIntervals();
 
 	// Initialize the xLastWakeTime variable with the current time.

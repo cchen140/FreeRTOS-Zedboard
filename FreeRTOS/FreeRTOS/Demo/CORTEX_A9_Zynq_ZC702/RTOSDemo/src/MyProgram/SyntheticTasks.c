@@ -99,7 +99,7 @@ void prvGeneralSyntheticTask(void *pvParameters)
 
 	/* Print ground truth for ScheduLeak experiments. */
 	//u32 presentGtTime = GET_GTIMER_LOWER;
-	u32 thisPeriod = pvTaskParam->periodUs*333;
+	u32 thisPeriod = pvTaskParam->periodUs*333.333333;
 	u32 initialArrival = firstGtTimeCount%thisPeriod;
 	xil_printf("\r\nTask-%d:\t%d ns\r\n", getTaskId(), initialArrival*3);
 
