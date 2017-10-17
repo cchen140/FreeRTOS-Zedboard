@@ -171,7 +171,7 @@ void applyObserverTaskExecInterval(XTime u32ExecIntervalBeginTime, XTime u32Exec
 
 	// second period part.
 	Interval intervalSecondPeriodPart;
-	shiftInterval( &thisInterval, -u32VictimPeriod );
+	shiftInterval( &thisInterval, -(u64)u32VictimPeriod );
 	if (thisInterval.length > 0) {
 		if ( getIntersection( &wholeBaseInterval, &thisInterval, &intervalSecondPeriodPart ) == TRUE ) {
 			/* Debug */
