@@ -3,22 +3,24 @@
 /* AES Cryptography */
 //#include "crypto_aes/TI_aes_128_encr_only.h"
 
+/* For task load */
+#include "CacheTimingAttack/CacheTimingAttackFunctions.h"
+
 /* For recording log. */
 #include "LogUtility/AppLogUtility.h"
 
 u32 u32AppArray[SIZE_OF_APP_ARRAY];	// Too big to fit the stack size limit of a FreeRTOS task.
-u32 u32AesArray[SIZE_OF_APP_ARRAY];
+//u32 u32AesArray[SIZE_OF_APP_ARRAY];
 
 TaskParam appTaskParamArray[] = {
 	//  period (us), priority, computation time (us), computing size
-		{32000, APP_TASK_LOWEST_PRIORITY, 9600, 0},
-		{20000, APP_TASK_LOWEST_PRIORITY+1, 4300, 0},
-		{10000, APP_TASK_LOWEST_PRIORITY+2, 1900, 0}
-//		,
-//		{20000, APP_TASK_LOWEST_PRIORITY+3, 100, 0},
-//		{18000, APP_TASK_LOWEST_PRIORITY+4, 100, 0},
-//		{18000, APP_TASK_LOWEST_PRIORITY+5, 100, 0},
-//		{18000, APP_TASK_LOWEST_PRIORITY+6, 100, 0},
+		{32000, APP_TASK_LOWEST_PRIORITY, 9600, SIZE_OF_APP_ARRAY/64},	// 0.3
+		{20000, APP_TASK_LOWEST_PRIORITY+1, 4300, SIZE_OF_APP_ARRAY/32},	// 0.215
+		{10000, APP_TASK_LOWEST_PRIORITY+2, 1900, SIZE_OF_APP_ARRAY/16},	// 0.19
+		{20000, APP_TASK_LOWEST_PRIORITY+3, 1000, SIZE_OF_APP_ARRAY/128},	// 0.1
+		{18000, APP_TASK_LOWEST_PRIORITY+4, 1800, SIZE_OF_APP_ARRAY/512},	// 0.18
+//		{15000, APP_TASK_LOWEST_PRIORITY+5, 100, SIZE_OF_APP_ARRAY/512},
+//		{10000, APP_TASK_LOWEST_PRIORITY+6, 100, SIZE_OF_APP_ARRAY/512},
 //		{20000, APP_TASK_LOWEST_PRIORITY+7, 100, 0},
 //		{20000, APP_TASK_LOWEST_PRIORITY+8, 100, 0},
 //		{32000, APP_TASK_LOWEST_PRIORITY+9, 100, 0}
@@ -70,6 +72,7 @@ void createSyntheticTasks(void)
 // Note that the arrays all the tasks read in this function are the same one.
 TickType_t firstTickCount = 0;
 XTime firstGtTimeCount = 0;
+extern int attackPhase;
 void prvGeneralSyntheticTask(void *pvParameters)
 {
 	TaskParam *pvTaskParam = pvParameters;
@@ -103,15 +106,25 @@ void prvGeneralSyntheticTask(void *pvParameters)
 	u32 initialArrival = firstGtTimeCount%thisPeriod;
 	xil_printf("\r\nTask-%d:\t%d ns\r\n", getTaskId(), initialArrival*3);
 
+	u32 i=0;
 	while (TRUE)
 	{
 //		taskENTER_CRITICAL();
 //		executionTime = GET_GTIMER_LOWER;
 
-		sprintf(logString, "BEGIN");    // print "BEGIN" to indicate the beginning of a task.
-		feedAppLog(getTaskId(), pvTaskParam->computeSize*4, logString);
-
-		usDelay(pvTaskParam->computationTimeUs);
+		//sprintf(logString, "BEGIN");    // print "BEGIN" to indicate the beginning of a task.
+		//feedAppLog(getTaskId(), pvTaskParam->computeSize*4, logString);
+		if ( (attackPhase==2) && (getTaskId()==1)) {
+			i++;
+			if (i%500 > 250) {
+				getTimeLoadLineIntArrayRange(u32AppArray, pvTaskParam->computeSize/2);
+			} else {
+				getTimeLoadLineIntArrayRange(u32AppArray, pvTaskParam->computeSize);	// Line read function.
+			}
+		} else {
+			getTimeLoadLineIntArrayRange(u32AppArray, pvTaskParam->computeSize);	// Line read function.
+			//usDelay(pvTaskParam->computationTimeUs);
+		}
 
 //		executionTime = GET_GTIMER_LOWER - executionTime;
 //		xil_printf("T%d: %d ns\r\n", getTaskId(), executionTime*3);

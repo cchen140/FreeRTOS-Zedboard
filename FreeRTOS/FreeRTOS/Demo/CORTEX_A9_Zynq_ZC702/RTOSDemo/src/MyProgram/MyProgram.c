@@ -64,6 +64,7 @@ void main_myProgram( void )
 
 }
 
+extern int attackPhase;
 void prvExperimentControlTask( void *pvParameters )
 {
 	TickType_t xLastWakeTime;
@@ -74,10 +75,12 @@ void prvExperimentControlTask( void *pvParameters )
 		vTaskDelayUntil( &xLastWakeTime, EXP_TASK_PERIOD_MS );
 
 		taskENTER_CRITICAL();
+		//computeAndPrintInferenceResult();
+		computeInferenceResult();
+		attackPhase = 2;
+		taskEXIT_CRITICAL();
 
-
-		computeAndPrintInferenceResult();
-
+		vTaskDelayUntil( &xLastWakeTime, EXP_TASK_PERIOD_MS*4 );
 
 		outputTaskList();
 

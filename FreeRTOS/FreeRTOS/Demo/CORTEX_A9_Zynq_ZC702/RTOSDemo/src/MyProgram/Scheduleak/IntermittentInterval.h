@@ -10,7 +10,7 @@
 
 #include "Interval.h"
 
-#define	MAX_INTERVAL_LIST_SIZE	100
+#define	MAX_INTERVAL_LIST_SIZE	1000
 
 typedef struct IntermittentInterval {
 	Interval intervals[MAX_INTERVAL_LIST_SIZE];
