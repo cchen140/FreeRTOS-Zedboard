@@ -96,7 +96,7 @@ void feedLog(LogList *inLogList, int inTaskId, u32 in_u32Data, char *in_strLogNo
 	taskENTER_CRITICAL();
 
 	/* Time Stamp */
-	inLogList->last->u32TimeStamp = GET_GTIMER_LOWER_INLINE;
+	XTime_GetTime(&inLogList->last->u64TimeStamp);
 
 	/* Log Note String */
 //	u32LogStringNoteLength = strlen(in_strLogNote);
@@ -119,7 +119,7 @@ void feedLogNoCritical(LogList *inLogList, int inTaskId, u32 in_u32Data, char *i
 //	taskENTER_CRITICAL();
 
 	/* Time Stamp */
-	inLogList->last->u32TimeStamp = GET_GTIMER_LOWER_INLINE;
+	XTime_GetTime(&inLogList->last->u64TimeStamp);
 
 	/* Log Note String */
 //	u32LogStringNoteLength = strlen(in_strLogNote);
@@ -158,7 +158,7 @@ void outputLogList(LogList *inLogList)
 		 * Log format:
 			TimeStamp (ns),
 		 */
-		unsigned long long thisTimeStampNs = ((unsigned long long)currentLogNode->u32TimeStamp)*3;
+		unsigned long long thisTimeStampNs = ((unsigned long long)currentLogNode->u64TimeStamp)*3;
 //		if (earliestTimeStamp == 0) {
 //			earliestTimeStamp = thisTimeStampNs;
 //			thisTimeStampNs = 0;

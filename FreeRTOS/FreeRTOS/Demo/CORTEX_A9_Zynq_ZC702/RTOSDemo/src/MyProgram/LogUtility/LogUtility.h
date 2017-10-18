@@ -19,7 +19,7 @@
 //#include "AttackConfig.h"
 #include <string.h>
 
-#define	GET_GTIMER_LOWER_INLINE	*(volatile u32 *) (GLOBAL_TMR_BASEADDR + GTIMER_COUNTER_LOWER_OFFSET);
+//#define	GET_GTIMER_LOWER_INLINE	*(volatile u32 *) (GLOBAL_TMR_BASEADDR + GTIMER_COUNTER_LOWER_OFFSET);
 
 //typedef enum
 //{
@@ -32,7 +32,7 @@
 
 typedef struct LogNode
 {
-	u32 u32TimeStamp;    /* Time record. */
+	u64 u64TimeStamp;    /* Time record. */
 	int logTask;
 	//char *strNote;        /* */
 	char strNote[30];
