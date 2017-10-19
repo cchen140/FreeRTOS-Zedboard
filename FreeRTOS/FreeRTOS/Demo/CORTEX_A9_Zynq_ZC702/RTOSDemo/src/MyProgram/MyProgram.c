@@ -80,7 +80,7 @@ void prvExperimentControlTask( void *pvParameters )
 		attackPhase = 2;
 		taskEXIT_CRITICAL();
 
-		vTaskDelayUntil( &xLastWakeTime, EXP_TASK_PERIOD_MS*4 );
+		vTaskDelayUntil( &xLastWakeTime, EXP_TASK_PERIOD_MS*5 );
 
 		outputTaskList();
 

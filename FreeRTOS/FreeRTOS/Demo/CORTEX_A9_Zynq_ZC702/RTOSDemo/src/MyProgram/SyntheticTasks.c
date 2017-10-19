@@ -15,10 +15,10 @@ u32 u32AppArray[SIZE_OF_APP_ARRAY];	// Too big to fit the stack size limit of a 
 TaskParam appTaskParamArray[] = {
 	//  period (us), priority, computation time (us), computing size
 		{32000, APP_TASK_LOWEST_PRIORITY, 9600, SIZE_OF_APP_ARRAY/64},	// 0.3
-		{20000, APP_TASK_LOWEST_PRIORITY+1, 4300, SIZE_OF_APP_ARRAY/32},	// 0.215
-		{10000, APP_TASK_LOWEST_PRIORITY+2, 1900, SIZE_OF_APP_ARRAY/16},	// 0.19
-		{20000, APP_TASK_LOWEST_PRIORITY+3, 1000, SIZE_OF_APP_ARRAY/128},	// 0.1
-		{18000, APP_TASK_LOWEST_PRIORITY+4, 1800, SIZE_OF_APP_ARRAY/512},	// 0.18
+		{22000, APP_TASK_LOWEST_PRIORITY+1, 4300, SIZE_OF_APP_ARRAY/128},	// 0.215
+		{20000, APP_TASK_LOWEST_PRIORITY+2, 1900, SIZE_OF_APP_ARRAY/16},	// 0.19
+		{18000, APP_TASK_LOWEST_PRIORITY+3, 1000, SIZE_OF_APP_ARRAY/128},	// 0.1
+		{10000, APP_TASK_LOWEST_PRIORITY+4, 1800, SIZE_OF_APP_ARRAY/64},	// 0.18
 //		{15000, APP_TASK_LOWEST_PRIORITY+5, 100, SIZE_OF_APP_ARRAY/512},
 //		{10000, APP_TASK_LOWEST_PRIORITY+6, 100, SIZE_OF_APP_ARRAY/512},
 //		{20000, APP_TASK_LOWEST_PRIORITY+7, 100, 0},
@@ -116,7 +116,7 @@ void prvGeneralSyntheticTask(void *pvParameters)
 		//feedAppLog(getTaskId(), pvTaskParam->computeSize*4, logString);
 		if ( (attackPhase==2) && (getTaskId()==1)) {
 			i++;
-			if (i%500 > 250) {
+			if (i%650 > 325) {
 				getTimeLoadLineIntArrayRange(u32AppArray, pvTaskParam->computeSize/2);
 			} else {
 				getTimeLoadLineIntArrayRange(u32AppArray, pvTaskParam->computeSize);	// Line read function.

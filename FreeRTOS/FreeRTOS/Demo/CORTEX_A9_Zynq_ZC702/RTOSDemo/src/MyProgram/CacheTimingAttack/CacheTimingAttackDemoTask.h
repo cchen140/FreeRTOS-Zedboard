@@ -18,7 +18,7 @@
 #define	CACHE_ATTACK_TASK_PRIORITY		tskIDLE_PRIORITY + 20	// Bigger number means higher priority.
 #define	CACHE_ATTACK_TASK_DELAY_TIME_MS	( 2/portTICK_RATE_MS )
 #define CACHE_ATTACK_TASK_STACK_SIZE		1024	// in unit of 32-bit
-#define	CACHE_ATTACK_TASK_AVERAGE_TIMES	5
+#define	CACHE_ATTACK_TASK_AVERAGE_TIMES	1
 
 /* These two values are obtained by experiments.
  * See slides to understand how to estimate these values. */

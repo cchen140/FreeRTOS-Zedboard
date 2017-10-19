@@ -147,7 +147,9 @@ void prvObserverTask( void *pvParameters )
 	u32CacheUsageSampleCount = 0;
 	u32SumOfCacheMissEstimate = 0;
 	while (attackPhase == 2) {
-		vTaskDelay( 1/portTICK_RATE_MS );
+		//vTaskDelay( 1/portTICK_RATE_MS );
+		//vTaskDelayUntil( &xLastWakeTime, OBSERVER_TASK_PERIOD_US/1000/portTICK_RATE_MS );
+		vTaskDelayUntil( &xLastWakeTime, 5/portTICK_RATE_MS );
 
 		XTime_GetTime(&currentTime);
 		XTime shiftedTime = currentTime%(u64)u32VictimPeriod;
@@ -183,7 +185,17 @@ void prvObserverTask( void *pvParameters )
 		// Average sampled cache-miss estimates.
 		if (u32CacheUsageSampleCount >= CACHE_ATTACK_TASK_AVERAGE_TIMES) {
 			u32CacheMissEstimateAverage = u32SumOfCacheMissEstimate/CACHE_ATTACK_TASK_AVERAGE_TIMES;
-			feedAppLog(getTaskId(), u32CacheMissEstimateAverage, "H");
+
+
+			if (shiftedTime >= inferenceResult) {
+				feedAppLog(getTaskId(), u32CacheMissEstimateAverage, "H");
+			} else if (inferenceResult - shiftedTime > 333333) {//  1000000/3, 1ms
+				feedAppLog(getTaskId(), u32CacheMissEstimateAverage, "H");
+			} else {
+				feedAttackerLog(getTaskId(), u32CacheMissEstimateAverage, "H");
+			}
+
+			//feedAppLog(getTaskId(), u32CacheMissEstimateAverage, "H");
 
 			// Hint: How to use u32CacheMissEstimateAverage:
 			// 		[cycles of 512kB miss] - u32CacheMissEstimateAverage = [time of X-Byte hit]
