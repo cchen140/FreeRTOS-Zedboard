@@ -19,7 +19,7 @@ typedef struct CapturedExecIntervals {
 void createAttackerTasks(void);
 
 void applyObserverTaskExecInterval(XTime u32ExecIntervalBeginTime, XTime u32ExecIntervalEndTime);
-u64 getArrivalTimeInference(void);
+u64 getArrivalTimeInference(Interval *inferenceInterval);
 double computeInferencePrecisionRatio(u32 victimPeriod, XTime groundTruth, XTime inference);
 u64 computeAndPrintInferenceResult(void);
 void computeInferenceResult(void);

@@ -30,5 +30,6 @@ void InterInterval_addIntervalWithoutCheckingOverlaps(IntermittentInterval *inte
 void InterInterval_removeInterval(IntermittentInterval *interInterval, Interval *intervalToBeRemoved);
 Interval *InterInterval_getAnEmptyIntervalSpace(IntermittentInterval *interInterval);
 void InterInterval_outputIntervals(IntermittentInterval *interInterval);
+void InterInterval_outputComplementaryInterval(IntermittentInterval *interInterval);
 
 #endif /* INTERMITTENTINTERVAL_H_ */

@@ -41,6 +41,7 @@ void InterInterval_getLargestComplementaryInterval(IntermittentInterval *interIn
 	/* Check the complementary interval between the last interval and base_end. */
 	if ( (interInterval->baseEnd-thisInterval->end) > largestLength ) {
 		initInterval( largestInterval, thisInterval->end, interInterval->baseEnd);
+		largestLength = interInterval->baseEnd-thisInterval->end;
 	}
 
 	/* Check if the first and the last complementary intervals should be considered as one interval. */
@@ -225,4 +226,33 @@ void InterInterval_outputIntervals(IntermittentInterval *interInterval) {
 
 		xil_printf("[%d - %d]\r\n", (u32)(thisInterval->begin*3), (u32)(thisInterval->end*3));
 	} while (thisInterval->nextInterval != thisInterval);
+}
+
+void InterInterval_outputComplementaryInterval(IntermittentInterval *interInterval) {
+	// We assume intervals are sorted already, so start from the first interval in the list.
+
+	//printf("Complementary Intervals (ns):\r\n");
+
+	/* Check if complementatry interval is empty. */
+	if ( (interInterval->firstInterval->begin == interInterval->baseBegin) && (interInterval->firstInterval->end == interInterval->baseEnd) ) {
+		printf("= no complementary interval =\r\n");
+	}
+
+
+	/* Output the complementary interval between base_begin and the first interval. */
+	if (interInterval->firstInterval->begin > interInterval->baseBegin) {
+		printf("[%lld - %lld]\t(%lld)\r\n", interInterval->baseBegin*3, interInterval->firstInterval->begin*3, (interInterval->firstInterval->begin - interInterval->baseBegin)*3);
+	}
+
+	Interval *thisInterval = interInterval->firstInterval;
+	while (thisInterval != thisInterval->nextInterval) {
+		printf("[%lld - %lld]\t(%lld)\r\n", thisInterval->end*3, thisInterval->nextInterval->begin*3, (thisInterval->nextInterval->begin - thisInterval->end)*3);
+		thisInterval = thisInterval->nextInterval;
+	}
+
+	/* Output the complementary interval between the last interval and base_end. */
+	if ( interInterval->baseEnd > thisInterval->end ) {
+		printf("[%lld - %lld]\t(%lld)\r\n", thisInterval->end*3, interInterval->baseEnd*3, (interInterval->baseEnd - thisInterval->end)*3);
+	}
+
 }

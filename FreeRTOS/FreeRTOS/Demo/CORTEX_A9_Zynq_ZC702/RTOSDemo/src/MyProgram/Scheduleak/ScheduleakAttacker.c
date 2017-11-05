@@ -19,7 +19,7 @@
 void prvObserverTask( void *pvParameters );
 void initInferenceBase(u32 u32InVictimPeriod);
 //void applyObserverTaskExecInterval(u32 u32ExecIntervalBeginTime, u32 u32ExecIntervalEndTime);
-//u32 getArrivalTimeInference(void);
+//u32 getArrivalTimeInference(Interval *inferenceInterval);
 void initCapturedExecIntervals(void);
 void addAnExecInterval(XTime begin, XTime end);
 
@@ -258,10 +258,15 @@ void applyObserverTaskExecInterval(XTime u32ExecIntervalBeginTime, XTime u32Exec
 
 
 // cost: 1300 ns
-u64 getArrivalTimeInference(void) {
+u64 getArrivalTimeInference(Interval *inferenceInterval) {
 	// Get complementary intervals, find the largest interval and return the begin time.
 	Interval largestComplInterval;
 	InterInterval_getLargestComplementaryInterval(&inferenceBase, &largestComplInterval, TRUE);
+
+	if (inferenceInterval != NULL) {
+		initInterval(inferenceInterval, largestComplInterval.begin, largestComplInterval.end);
+	 }
+
 	return largestComplInterval.begin;
 }
 
@@ -349,13 +354,15 @@ u64 computeAndPrintInferenceResult(void) {
 			dataInvalid = True;
 		}
 	}
-	inferenceResult = getArrivalTimeInference();
+
+	Interval inferenceIntervalResult;
+	inferenceResult = getArrivalTimeInference(&inferenceIntervalResult);
 
 	if (dataInvalid == True) {
 		xil_printf("\r\nInvalid data!!\r\n");
 	}
 
-	xil_printf("\r\nInference Result = %d ns \r\n", (u32)inferenceResult*3);
+	//xil_printf("\r\nInference Result = %d ns \r\n", (u32)inferenceResult*3);
 
 
 	/* Compute precision ratio. */
@@ -372,7 +379,14 @@ u64 computeAndPrintInferenceResult(void) {
 	xil_printf("Victim Period = %d\r\n", victimPeriod*3);
 
 	/* Print captured intervals (not inference intervals). */
-	InterInterval_outputIntervals(&inferenceBase);
+	//InterInterval_outputIntervals(&inferenceBase);
+
+	/* Print candidate intervals. */
+	xil_printf("Candidate Intervals (ns):\r\n");
+	InterInterval_outputComplementaryInterval(&inferenceBase);
+
+	xil_printf("\r\nInference Result = [%llu, %llu] => %d us \r\n", inferenceIntervalResult.begin*3, inferenceIntervalResult.end*3, inferenceIntervalResult.length*3);
+	xil_printf("\r\n");
 
 	return inferenceResult;
 }
@@ -389,5 +403,5 @@ void computeInferenceResult(void) {
 			dataInvalid = True;
 		}
 	}
-	inferenceResult = getArrivalTimeInference();
+	inferenceResult = getArrivalTimeInference(NULL);
 }
