@@ -28,7 +28,7 @@ void createAttackerTasks(void) {
 					"ObserverTask", 			/* The text name assigned to the task - for debug only as it is not used by the kernel. */
 					5000, 				/* The size of the stack to allocate to the task. */
 					NULL, 				/* The parameter passed to the task - not used in this case. */
-					tskIDLE_PRIORITY+1, 	/* The priority assigned to the task. */
+					APP_TASK_LOWEST_PRIORITY-1, 	/* The priority assigned to the task. */
 					NULL );
 }
 
@@ -188,11 +188,14 @@ void prvObserverTask( void *pvParameters )
 
 
 			if (shiftedTime >= inferenceResult) {
-				feedAppLog(getTaskId(), u32CacheMissEstimateAverage, "H");
+				feedAppLog(getTaskId(), u32CacheMissEstimateAverage, "H");	// The program should never reach here.
 			} else if (inferenceResult - shiftedTime > 333333) {//  1000000/3, 1ms
-				feedAppLog(getTaskId(), u32CacheMissEstimateAverage, "H");
+				feedAppLog(getTaskId(), u32CacheMissEstimateAverage, "H");	// The program should never reach here.
 			} else {
 				feedAttackerLog(getTaskId(), u32CacheMissEstimateAverage, "H");
+				if (u32CacheMissEstimateAverage > 4500) {
+					printMarker(2, "hack");
+				}
 			}
 
 			//feedAppLog(getTaskId(), u32CacheMissEstimateAverage, "H");
@@ -385,7 +388,7 @@ u64 computeAndPrintInferenceResult(void) {
 	xil_printf("Candidate Intervals (ns):\r\n");
 	InterInterval_outputComplementaryInterval(&inferenceBase);
 
-	xil_printf("\r\nInference Result = [%llu, %llu] => %d us \r\n", inferenceIntervalResult.begin*3, inferenceIntervalResult.end*3, inferenceIntervalResult.length*3);
+	xil_printf("\r\nInference Result = [%llu, %llu] => %lld us \r\n", inferenceIntervalResult.begin*3, inferenceIntervalResult.end*3, inferenceIntervalResult.length*3);
 	xil_printf("\r\n");
 
 	return inferenceResult;

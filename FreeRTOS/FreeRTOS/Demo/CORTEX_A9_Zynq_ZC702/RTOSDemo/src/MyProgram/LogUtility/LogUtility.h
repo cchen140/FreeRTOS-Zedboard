@@ -50,6 +50,7 @@ typedef struct LogList
 //	char isInitialized;
 } LogList;
 
+char *ulltostr(unsigned long long value, char *ptr, int base);
 void initLogList(LogList *inLogList);
 struct LogNode* moveToNextLogNode(LogList *inLogList);
 void feedLog(LogList *inLogList, int inTaskId, u32 in_u32Data, char *in_strLogNote);

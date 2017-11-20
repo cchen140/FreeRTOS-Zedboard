@@ -22,7 +22,7 @@ void usDelay(u32 usSeconds);
 /* Define for application task. */
 #define	SIZE_OF_APP_ARRAY			( 512000/4 ) // in u32 // 448000 for 1-way locked
 //#define	LINE_OF_APP_ARRAY			SIZE_OF_APP_ARRAY*4/32
-#define APP_TASK_LOWEST_PRIORITY	tskIDLE_PRIORITY + 2	// Low hacker task has (tskIDLE_PRIORITY+1) priority.
+#define APP_TASK_LOWEST_PRIORITY	tskIDLE_PRIORITY + 5	// Low hacker task has (tskIDLE_PRIORITY+1) priority.
 #define APP_TASK_STACK_SIZE			2000
 
 /* Define for AES task. */

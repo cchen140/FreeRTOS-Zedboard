@@ -20,6 +20,8 @@
 #include "Scheduleak/ScheduleakAttacker.h"
 #include "Scheduleak/IntermittentInterval.h"
 
+#include "GpsTrace/GpsTrace.h"
+
 #include "MyProgram.h"
 
 u32 u32EventCounter0, u32EventCounter1;
@@ -33,7 +35,7 @@ LogList attackerLogList;
 
 void main_myProgram( void )
 {
-    xil_printf("My program starts. \r\n");
+    xil_printf("#My program starts. \r\n");
 
     // Disable caches (if needed).
     //Xil_L1ICacheDisable();
@@ -56,6 +58,13 @@ void main_myProgram( void )
 					EXP_TASK_PRIORITY, 	/* The priority assigned to the task. */
 					NULL );				/* The task handle is not required, so NULL is passed. */
 
+	xTaskCreate( prvGpsUpdaterTask,	/* The function that implements the task. */
+					"GpsTrace", 		/* The text name assigned to the task - for debug only as it is not used by the kernel. */
+					EXP_TASK_STACK_SIZE,/* The size of the stack to allocate to the task. */
+					NULL, 				/* The parameter passed to the task - not used in this case. */
+					tskIDLE_PRIORITY+1, 	/* The priority assigned to the task. */
+					NULL );				/* The task handle is not required, so NULL is passed. */
+
 	/* Start the tasks and timer running. */
 	vTaskStartScheduler();
 
@@ -73,6 +82,7 @@ void prvExperimentControlTask( void *pvParameters )
 	{
 		// Set the next wake-up time which exactly the experiment period.
 		vTaskDelayUntil( &xLastWakeTime, EXP_TASK_PERIOD_MS );
+		//xil_printf("#Observation finished.\r\n");
 
 		taskENTER_CRITICAL();
 		//computeAndPrintInferenceResult();
@@ -80,7 +90,8 @@ void prvExperimentControlTask( void *pvParameters )
 		attackPhase = 2;
 		taskEXIT_CRITICAL();
 
-		vTaskDelayUntil( &xLastWakeTime, EXP_TASK_PERIOD_MS*5 );
+		//xil_printf("#Reconnaissance stage finished.\r\n");
+		vTaskDelayUntil( &xLastWakeTime, EXP_TASK_PERIOD_MS*15 ); //*5
 
 		outputTaskList();
 

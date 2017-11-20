@@ -9,6 +9,10 @@
 /* For recording log. */
 #include "LogUtility/AppLogUtility.h"
 
+#include "GpsTrace/GpsTrace.h"
+extern u32 u32TraceProgress;
+extern GpsPoint currentGpsPoint;
+
 u32 u32AppArray[SIZE_OF_APP_ARRAY];	// Too big to fit the stack size limit of a FreeRTOS task.
 //u32 u32AesArray[SIZE_OF_APP_ARRAY];
 
@@ -73,6 +77,8 @@ void createSyntheticTasks(void)
 TickType_t firstTickCount = 0;
 XTime firstGtTimeCount = 0;
 extern int attackPhase;
+u32 u32LastTraceProgress = 0;
+u32 u32Mode2Count = 0;
 void prvGeneralSyntheticTask(void *pvParameters)
 {
 	TaskParam *pvTaskParam = pvParameters;
@@ -93,7 +99,7 @@ void prvGeneralSyntheticTask(void *pvParameters)
 		XTime_GetTime(&firstGtTimeCount);
 		//firstGtTimeCount = GET_GTIMER_LOWER;
 		u32 low_gtime = GET_GTIMER_LOWER;
-		xil_printf("\r\nGET_GTIMER_LOWER = %d\r\n", low_gtime*3);
+		xil_printf("\r\n#GET_GTIMER_LOWER = %d\r\n", low_gtime*3);
 	}
 	else
 	{
@@ -104,7 +110,7 @@ void prvGeneralSyntheticTask(void *pvParameters)
 	//u32 presentGtTime = GET_GTIMER_LOWER;
 	u32 thisPeriod = pvTaskParam->periodUs*333.333333;
 	u32 initialArrival = firstGtTimeCount%thisPeriod;
-	xil_printf("\r\nTask-%d:\t%d ns\r\n", getTaskId(), initialArrival*3);
+	xil_printf("#Task-%d:\t%d ns\r\n", getTaskId(), initialArrival*3);
 
 	u32 i=0;
 	while (TRUE)
@@ -116,11 +122,25 @@ void prvGeneralSyntheticTask(void *pvParameters)
 		//feedAppLog(getTaskId(), pvTaskParam->computeSize*4, logString);
 		if ( (attackPhase==2) && (getTaskId()==1)) {
 			i++;
-			if (i%650 > 325) {
-				getTimeLoadLineIntArrayRange(u32AppArray, pvTaskParam->computeSize/2);
-			} else {
-				getTimeLoadLineIntArrayRange(u32AppArray, pvTaskParam->computeSize);	// Line read function.
+//			if (i%650 > 325) {
+//				getTimeLoadLineIntArrayRange(u32AppArray, pvTaskParam->computeSize/2);
+//			} else {
+//				getTimeLoadLineIntArrayRange(u32AppArray, pvTaskParam->computeSize);	// Line read function.
+//			}
+
+			if ((currentGpsPoint.mode==1)&&(u32LastTraceProgress!=u32TraceProgress)) {
+				u32Mode2Count = 20;
 			}
+
+			if (u32Mode2Count > 0) {
+				u32Mode2Count--;
+				getTimeLoadLineIntArrayRange(u32AppArray, pvTaskParam->computeSize);
+			} else {
+				getTimeLoadLineIntArrayRange(u32AppArray, pvTaskParam->computeSize/2);
+			}
+
+			u32LastTraceProgress = u32TraceProgress;
+
 		} else {
 			getTimeLoadLineIntArrayRange(u32AppArray, pvTaskParam->computeSize);	// Line read function.
 			//usDelay(pvTaskParam->computationTimeUs);

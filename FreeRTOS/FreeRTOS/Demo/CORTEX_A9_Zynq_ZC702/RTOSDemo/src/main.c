@@ -208,7 +208,7 @@ int main( void )
 	}
 	#elif ( mainSELECTED_APPLICATION == 3 )
 	{
-		printf("Going to run main_myProgram. \r\n");
+		printf("#Going to run main_myProgram. \r\n");
 		main_myProgram();
 	}
 	#endif
