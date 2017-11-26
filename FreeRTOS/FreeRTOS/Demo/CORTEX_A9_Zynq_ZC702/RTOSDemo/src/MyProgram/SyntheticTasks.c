@@ -134,7 +134,7 @@ void prvGeneralSyntheticTask(void *pvParameters)
 
 			if (u32Mode2Count > 0) {
 				u32Mode2Count--;
-				getTimeLoadLineIntArrayRange(u32AppArray, pvTaskParam->computeSize);
+				getTimeLoadLineIntArrayRange(u32AppArray, pvTaskParam->computeSize*2);
 			} else {
 				getTimeLoadLineIntArrayRange(u32AppArray, pvTaskParam->computeSize/2);
 			}
