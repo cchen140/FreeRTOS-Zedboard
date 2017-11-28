@@ -16,6 +16,8 @@
 #include "../CacheTimingAttack/CacheTimingAttackFunctions.h"
 #include "../CacheTimingAttack/CacheTimingAttackDemoTask.h"
 
+#define	WITHOUT_SCHEDULEAK
+
 void prvObserverTask( void *pvParameters );
 void initInferenceBase(u32 u32InVictimPeriod);
 //void applyObserverTaskExecInterval(u32 u32ExecIntervalBeginTime, u32 u32ExecIntervalEndTime);
@@ -149,15 +151,18 @@ void prvObserverTask( void *pvParameters )
 	while (attackPhase == 2) {
 		//vTaskDelay( 1/portTICK_RATE_MS );
 		//vTaskDelayUntil( &xLastWakeTime, OBSERVER_TASK_PERIOD_US/1000/portTICK_RATE_MS );
-		vTaskDelayUntil( &xLastWakeTime, 5/portTICK_RATE_MS );
+		vTaskDelayUntil( &xLastWakeTime, 40/portTICK_RATE_MS );
 
 		XTime_GetTime(&currentTime);
 		XTime shiftedTime = currentTime%(u64)u32VictimPeriod;
+
+#ifndef WITHOUT_SCHEDULEAK
 		if (shiftedTime >= inferenceResult) {
 			continue;
 		} else if (inferenceResult - shiftedTime > 333333) {//  1000000/3, 1ms
 			continue;
 		}
+#endif
 
 		/* "Prime" step:
 		 * 		Fill the data cache with attacker's data. */
@@ -186,7 +191,9 @@ void prvObserverTask( void *pvParameters )
 		if (u32CacheUsageSampleCount >= CACHE_ATTACK_TASK_AVERAGE_TIMES) {
 			u32CacheMissEstimateAverage = u32SumOfCacheMissEstimate/CACHE_ATTACK_TASK_AVERAGE_TIMES;
 
-
+#ifdef	WITHOUT_SCHEDULEAK
+			feedAppLog(getTaskId(), u32CacheMissEstimateAverage, "H");	// The program should never reach here.
+#else
 			if (shiftedTime >= inferenceResult) {
 				feedAppLog(getTaskId(), u32CacheMissEstimateAverage, "H");	// The program should never reach here.
 			} else if (inferenceResult - shiftedTime > 333333) {//  1000000/3, 1ms
@@ -197,6 +204,7 @@ void prvObserverTask( void *pvParameters )
 					printMarker(2, "hack");
 				}
 			}
+#endif
 
 			//feedAppLog(getTaskId(), u32CacheMissEstimateAverage, "H");
 
@@ -407,4 +415,6 @@ void computeInferenceResult(void) {
 		}
 	}
 	inferenceResult = getArrivalTimeInference(NULL);
+
+	xil_printf("\r\n#Inference Result = %lld\r\n", (u32)inferenceResult*3);
 }

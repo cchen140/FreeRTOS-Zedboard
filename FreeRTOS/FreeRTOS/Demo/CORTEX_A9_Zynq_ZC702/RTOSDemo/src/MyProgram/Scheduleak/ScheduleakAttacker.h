@@ -4,7 +4,7 @@
 #include "interval.h"
 #include "xtime_l.h"
 
-#define	OBSERVER_TASK_PERIOD_US	49000
+#define	OBSERVER_TASK_PERIOD_US	40000
 #define	MAX_CAPTURED_EXEC_INTERVAL_LIST_SIZE	2000
 #define VICTIM_TASK_ID_OFFSET	0
 
